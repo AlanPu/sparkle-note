@@ -1,10 +1,15 @@
 package com.sparkle.note.data.database.di
 
+import android.app.Application
+import android.content.Context
 import com.sparkle.note.data.repository.InspirationRepositoryImpl
 import com.sparkle.note.domain.repository.InspirationRepository
+import com.sparkle.note.utils.BackupManager
 import dagger.Binds
 import dagger.Module
+import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
@@ -25,4 +30,14 @@ abstract class RepositoryModule {
     abstract fun bindInspirationRepository(
         inspirationRepositoryImpl: InspirationRepositoryImpl
     ): InspirationRepository
+    
+    companion object {
+        @Provides
+        @Singleton
+        fun provideContext(application: Application): Context = application
+        
+        @Provides
+        @Singleton
+        fun provideBackupManager(): BackupManager = BackupManager
+    }
 }

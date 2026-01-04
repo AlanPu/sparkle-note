@@ -82,4 +82,11 @@ interface InspirationDao {
      */
     @Query("SELECT COUNT(*) FROM inspirations WHERE theme_name = :themeName")
     suspend fun getInspirationCountByTheme(themeName: String): Long
+    
+    /**
+     * Deletes all inspirations with a specific theme.
+     * @param themeName The theme name to delete inspirations for
+     */
+    @Query("DELETE FROM inspirations WHERE theme_name = :themeName")
+    suspend fun deleteByThemeName(themeName: String)
 }

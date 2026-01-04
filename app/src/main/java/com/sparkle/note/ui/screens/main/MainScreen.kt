@@ -33,6 +33,10 @@ fun MainScreen(
                 is MainEvent.ShowError -> {
                     snackbarHostState.showSnackbar(event.message)
                 }
+                is MainEvent.ShowDeleteSuccess -> {
+                    snackbarHostState.showSnackbar(event.message)
+                    // TODO: Add undo action to Snackbar
+                }
             }
         }
     }

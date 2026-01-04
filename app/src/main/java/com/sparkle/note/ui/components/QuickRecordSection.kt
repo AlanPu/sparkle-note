@@ -84,14 +84,10 @@ fun QuickRecordSection(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween
             ) {
-                // Theme selector (simplified)
-                Text(
-                    text = selectedTheme,
-                    color = Color(0xFF4A90E2), // Nordic blue
-                    style = TextStyle(
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium
-                    )
+                // Theme selector dropdown
+                ThemeSelector(
+                    selectedTheme = selectedTheme,
+                    onThemeSelect = onThemeSelect
                 )
                 
                 // Character count
@@ -123,6 +119,79 @@ fun QuickRecordSection(
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium
                     )
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Theme selector dropdown component.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ThemeSelector(
+    selectedTheme: String,
+    onThemeSelect: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var expanded by remember { mutableStateOf(false) }
+    
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = !expanded },
+        modifier = modifier
+    ) {
+        OutlinedTextField(
+            value = selectedTheme,
+            onValueChange = {},
+            readOnly = true,
+            modifier = Modifier
+                .menuAnchor()
+                .width(120.dp),
+            textStyle = TextStyle(
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color(0xFF4A90E2) // Nordic blue
+            ),
+            trailingIcon = { 
+                ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) 
+            },
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = Color(0xFF4A90E2),
+                unfocusedBorderColor = Color(0xFF333333),
+                focusedContainerColor = Color(0xFF1A1A1A),
+                unfocusedContainerColor = Color(0xFF1A1A1A)
+            ),
+            singleLine = true
+        )
+        
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            // Common themes
+            val commonThemes = listOf(
+                "未分类",
+                "产品设计", 
+                "技术开发",
+                "生活感悟",
+                "读书笔记",
+                "工作思考"
+            )
+            
+            commonThemes.forEach { theme ->
+                DropdownMenuItem(
+                    text = { 
+                        Text(
+                            text = theme,
+                            style = TextStyle(fontSize = 14.sp)
+                        )
+                    },
+                    onClick = {
+                        onThemeSelect(theme)
+                        expanded = false
+                    }
                 )
             }
         }

@@ -58,6 +58,15 @@ class InspirationRepositoryImpl @Inject constructor(
         }
     }
     
+    override suspend fun deleteInspirationsByTheme(themeName: String): Result<Unit> {
+        return try {
+            inspirationDao.deleteByThemeName(themeName)
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
     override fun exportToMarkdown(inspirations: List<Inspiration>): String {
         return com.sparkle.note.utils.ExportManager.exportBatchToMarkdown(inspirations)
     }

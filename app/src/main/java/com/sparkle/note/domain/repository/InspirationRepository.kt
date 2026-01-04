@@ -50,6 +50,13 @@ interface InspirationRepository {
     suspend fun deleteInspiration(id: Long): Result<Unit>
     
     /**
+     * Delete all inspirations with a specific theme.
+     * @param themeName The theme name to delete inspirations for
+     * @return Result indicating success or failure
+     */
+    suspend fun deleteInspirationsByTheme(themeName: String): Result<Unit>
+    
+    /**
      * Export inspirations to markdown format.
      * @param inspirations List of inspirations to export
      * @return Markdown formatted string

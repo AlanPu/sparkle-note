@@ -63,6 +63,15 @@ class MockInspirationRepository : com.sparkle.note.domain.repository.Inspiration
         }
     }
     
+    override suspend fun deleteInspirationsByTheme(themeName: String): Result<Unit> {
+        return try {
+            inspirations.removeIf { it.themeName == themeName }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
     override fun exportToMarkdown(inspirations: List<Inspiration>): String {
         return com.sparkle.note.utils.ExportManager.exportBatchToMarkdown(inspirations)
     }

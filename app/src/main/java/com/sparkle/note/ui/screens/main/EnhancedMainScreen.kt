@@ -31,6 +31,15 @@ fun EnhancedMainScreen(
                 is MainEvent.ShowError -> {
                     snackbarHostState.showSnackbar(event.message)
                 }
+                is MainEvent.ShowDeleteSuccess -> {
+                    val result = snackbarHostState.showSnackbar(
+                        message = event.message,
+                        actionLabel = "撤销"
+                    )
+                    if (result == SnackbarResult.ActionPerformed) {
+                        viewModel.onUndoDelete(event.deletedInspiration.id)
+                    }
+                }
             }
         }
     }
@@ -88,6 +97,13 @@ fun EnhancedMainScreen(
                 )
             }
             
+            // Time filter chips
+            TimeFilterChips(
+                selectedFilter = uiState.selectedTimeFilter,
+                onTimeFilter = viewModel::onTimeFilter,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+            )
+            
             // Inspirations list with enhanced cards
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
@@ -131,6 +147,35 @@ fun EnhancedMainScreen(
                         .padding(32.dp)
                 )
             }
+        }
+    }
+}
+
+/**
+ * Time filter chips for filtering inspirations by time period.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TimeFilterChips(
+    selectedFilter: TimeFilter,
+    onTimeFilter: (TimeFilter) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        TimeFilter.values().forEach { filter ->
+            FilterChip(
+                selected = filter == selectedFilter,
+                onClick = { onTimeFilter(filter) },
+                label = { 
+                    Text(
+                        text = TimeFilter.getDisplayName(filter),
+                        style = MaterialTheme.typography.labelMedium
+                    )
+                }
+            )
         }
     }
 }
