@@ -7,7 +7,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.sparkle.note.ui.screens.backup.BackupManagementScreen
 import com.sparkle.note.ui.screens.batch.BatchOperationScreen
-import com.sparkle.note.ui.screens.main.EnhancedMainScreen
+import com.sparkle.note.ui.screens.main.FinalMainScreen
 import com.sparkle.note.ui.screens.search.AdvancedSearchScreen
 import com.sparkle.note.ui.screens.theme.ThemeManagementScreen
 
@@ -23,9 +23,9 @@ fun SparkleNoteNavGraph(
         navController = navController,
         startDestination = "main"
     ) {
-        // Main screen with navigation drawer
+        // Main screen with optimized bottom input
         composable("main") {
-            EnhancedMainScreen(navController = navController)
+            FinalMainScreen(navController = navController)
         }
         
         // Backup management screen
