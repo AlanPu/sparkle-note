@@ -7,8 +7,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
-import com.sparkle.note.ui.screens.main.EnhancedMainScreen
-import com.sparkle.note.ui.screens.main.MainScreen
+import androidx.navigation.compose.rememberNavController
+import com.sparkle.note.ui.navigation.SparkleNoteNavGraph
 import com.sparkle.note.ui.theme.SparkleNoteTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -27,7 +27,8 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    EnhancedMainScreen()
+                    val navController = rememberNavController()
+                    SparkleNoteNavGraph(navController = navController)
                 }
             }
         }

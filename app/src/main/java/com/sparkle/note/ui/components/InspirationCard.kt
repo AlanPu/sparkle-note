@@ -11,6 +11,10 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.alpha
 
 /**
  * Card component for displaying an inspiration note.
@@ -34,10 +38,27 @@ fun InspirationCard(
     
     val themeEmoji = getThemeEmoji(themeName)
     
+    // Animation states
+    val scale = remember { Animatable(0.95f) }
+    val alpha = remember { Animatable(0.8f) }
+    
+    LaunchedEffect(Unit) {
+        scale.animateTo(
+            targetValue = 1f,
+            animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing)
+        )
+        alpha.animateTo(
+            targetValue = 1f,
+            animationSpec = tween(durationMillis = 200)
+        )
+    }
+    
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .scale(scale.value)
+            .alpha(alpha.value),
         colors = CardDefaults.cardColors(
             containerColor = Color(0xFF2A2A2A) // Nordic surface dark
         ),

@@ -3,20 +3,26 @@ package com.sparkle.note.ui.screens.main
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.sparkle.note.ui.components.*
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
+import com.sparkle.note.ui.components.QuickRecordSection
 
 /**
- * Enhanced main screen with search, filter, and export functionality.
- * Integrates all advanced features into the main interface.
+ * Enhanced main screen with navigation and all features integrated.
+ * Provides access to all Day 3 advanced features through top bar actions.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EnhancedMainScreen(
-    viewModel: MainViewModel = androidx.hilt.navigation.compose.hiltViewModel()
+    navController: NavController = rememberNavController(),
+    viewModel: MainViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -32,13 +38,7 @@ fun EnhancedMainScreen(
                     snackbarHostState.showSnackbar(event.message)
                 }
                 is MainEvent.ShowDeleteSuccess -> {
-                    val result = snackbarHostState.showSnackbar(
-                        message = event.message,
-                        actionLabel = "撤销"
-                    )
-                    if (result == SnackbarResult.ActionPerformed) {
-                        viewModel.onUndoDelete(event.deletedInspiration.id)
-                    }
+                    snackbarHostState.showSnackbar(event.message)
                 }
             }
         }
@@ -46,14 +46,42 @@ fun EnhancedMainScreen(
     
     Scaffold(
         topBar = {
-            TopAppBar(
+            CenterAlignedTopAppBar(
                 title = { 
                     Text(
                         text = "Sparkle Note",
                         style = MaterialTheme.typography.titleLarge
                     )
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
+                navigationIcon = {
+                    IconButton(onClick = { navController.navigate("theme") }) {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = "主题管理"
+                        )
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { navController.navigate("search") }) {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = "高级搜索"
+                        )
+                    }
+                    IconButton(onClick = { navController.navigate("batch") }) {
+                        Icon(
+                            imageVector = Icons.Default.CheckCircle,
+                            contentDescription = "批量操作"
+                        )
+                    }
+                    IconButton(onClick = { navController.navigate("backup") }) {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = "备份管理"
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
                     titleContentColor = MaterialTheme.colorScheme.onSurface
                 )
@@ -76,66 +104,30 @@ fun EnhancedMainScreen(
                 onSave = viewModel::onSaveInspiration
             )
             
-            // Action bar with search and export
-            ActionBar(
-                searchQuery = uiState.searchKeyword,
-                onSearchQueryChange = viewModel::onSearch,
-                onClearSearch = { viewModel.onSearch("") },
-                onExportClick = { 
-                    // TODO: Implement export functionality
-                    viewModel.onExportInspirations()
-                }
-            )
-            
-            // Theme filter chips
+            // Theme selector chips
             if (uiState.themes.isNotEmpty()) {
-                ThemeFilterChips(
+                ThemeSelector(
                     themes = uiState.themes,
-                    selectedTheme = uiState.selectedFilterTheme,
-                    onThemeFilter = viewModel::onThemeFilter,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    selectedTheme = uiState.selectedTheme,
+                    onThemeSelect = viewModel::onThemeSelect,
+                    modifier = Modifier.padding(horizontal = 16.dp)
                 )
             }
             
-            // Time filter chips
-            TimeFilterChips(
-                selectedFilter = uiState.selectedTimeFilter,
-                onTimeFilter = viewModel::onTimeFilter,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
-            )
-            
-            // Inspirations list with enhanced cards
+            // Inspirations list
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(uiState.inspirations) { inspiration ->
-                    var showDeleteDialog by remember { mutableStateOf(false) }
-                    
-                    if (showDeleteDialog) {
-                        DeleteConfirmationDialog(
-                            onConfirm = { viewModel.onDeleteInspiration(inspiration.id) },
-                            onDismiss = { showDeleteDialog = false }
-                        )
-                    }
-                    
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth(),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surface
-                        ),
-                        onClick = { /* Handle card click */ }
-                    ) {
-                        InspirationCard(
-                            content = inspiration.content,
-                            themeName = inspiration.themeName,
-                            createdAtText = formatTimeAgo(inspiration.createdAt),
-                            onClick = { /* Handle card click */ },
-                            onDelete = { showDeleteDialog = true }
-                        )
-                    }
+                    com.sparkle.note.ui.components.InspirationCard(
+                        content = inspiration.content,
+                        themeName = inspiration.themeName,
+                        createdAtText = formatTimeAgo(inspiration.createdAt),
+                        onClick = { /* Handle card click */ },
+                        onDelete = { viewModel.onDeleteInspiration(inspiration.id) }
+                    )
                 }
             }
             
@@ -145,77 +137,6 @@ fun EnhancedMainScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(32.dp)
-                )
-            }
-        }
-    }
-}
-
-/**
- * Time filter chips for filtering inspirations by time period.
- */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun TimeFilterChips(
-    selectedFilter: TimeFilter,
-    onTimeFilter: (TimeFilter) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        TimeFilter.values().forEach { filter ->
-            FilterChip(
-                selected = filter == selectedFilter,
-                onClick = { onTimeFilter(filter) },
-                label = { 
-                    Text(
-                        text = TimeFilter.getDisplayName(filter),
-                        style = MaterialTheme.typography.labelMedium
-                    )
-                }
-            )
-        }
-    }
-}
-
-/**
- * Theme filter chips for filtering inspirations by theme.
- */
-@Composable
-fun ThemeFilterChips(
-    themes: List<String>,
-    selectedTheme: String?,
-    onThemeFilter: (String?) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Text(
-            text = "按主题筛选",
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            // All themes chip
-            FilterChip(
-                selected = selectedTheme == null,
-                onClick = { onThemeFilter(null) },
-                label = { Text("全部") }
-            )
-            
-            // Individual theme chips
-            themes.forEach { theme ->
-                FilterChip(
-                    selected = theme == selectedTheme,
-                    onClick = { onThemeFilter(theme) },
-                    label = { Text(theme) }
                 )
             }
         }

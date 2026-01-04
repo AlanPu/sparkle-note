@@ -11,6 +11,10 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.alpha
 
 /**
  * Component for quick recording of inspiration notes.
@@ -25,10 +29,27 @@ fun QuickRecordSection(
     onSave: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // Animation states
+    val scale = remember { Animatable(0.95f) }
+    val alpha = remember { Animatable(0.8f) }
+    
+    LaunchedEffect(Unit) {
+        scale.animateTo(
+            targetValue = 1f,
+            animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing)
+        )
+        alpha.animateTo(
+            targetValue = 1f,
+            animationSpec = tween(durationMillis = 300)
+        )
+    }
+    
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .padding(16.dp),
+            .padding(16.dp)
+            .scale(scale.value)
+            .alpha(alpha.value),
         colors = CardDefaults.cardColors(
             containerColor = Color(0xFF2A2A2A) // Nordic surface dark
         ),
