@@ -1,10 +1,11 @@
 package com.sparkle.note.ui.screens.main
 
 import com.sparkle.note.domain.model.Inspiration
+import com.sparkle.note.data.repository.MockInspirationRepository
+import com.sparkle.note.data.repository.MockThemeRepository
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -21,14 +22,16 @@ import org.junit.Test
 class MainViewModelTest {
     
     private lateinit var viewModel: MainViewModel
-    private lateinit var mockRepository: com.sparkle.note.data.repository.MockInspirationRepository
+    private lateinit var mockRepository: MockInspirationRepository
+    private lateinit var mockThemeRepository: MockThemeRepository
     private val testDispatcher = StandardTestDispatcher()
     
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
-        mockRepository = com.sparkle.note.data.repository.MockInspirationRepository()
-        viewModel = MainViewModel(mockRepository)
+        mockRepository = MockInspirationRepository()
+        mockThemeRepository = MockThemeRepository()
+        viewModel = MainViewModel(mockRepository, mockThemeRepository)
     }
     
     @After
@@ -37,7 +40,7 @@ class MainViewModelTest {
     }
     
     @Test
-    fun `mainViewModel_initialState_hasEmptyContentAndDefaultTheme()`() {
+    fun `mainViewModel_initialState_hasEmptyContentAndDefaultTheme`() = runTest {
         // Arrange & Assert
         val initialState = viewModel.uiState.value
         assertThat(initialState.currentContent).isEmpty()
@@ -46,7 +49,7 @@ class MainViewModelTest {
     }
     
     @Test
-    fun `mainViewModel_onContentChange_updatesContentCorrectly()`() {
+    fun `mainViewModel_onContentChange_updatesContentCorrectly`() = runTest {
         // Arrange
         val testContent = "这是一个测试灵感"
         
@@ -59,7 +62,7 @@ class MainViewModelTest {
     }
     
     @Test
-    fun `mainViewModel_onContentChange_respects500CharacterLimit()`() {
+    fun `mainViewModel_onContentChange_respects500CharacterLimit`() = runTest {
         // Arrange
         val longContent = "a".repeat(600) // 600 characters, exceeds 500 limit
         
@@ -68,13 +71,13 @@ class MainViewModelTest {
         
         // Assert
         val updatedState = viewModel.uiState.value
-        assertThat(updatedState.currentContent.length).isEqualTo(500) // Should be truncated to 500
+        assertThat(updatedState.currentContent.length).isEqualTo(500)
     }
     
     @Test
-    fun `mainViewModel_onThemeSelect_updatesThemeCorrectly()`() {
+    fun `mainViewModel_onThemeSelect_updatesSelectedTheme`() = runTest {
         // Arrange
-        val newTheme = "技术开发"
+        val newTheme = "产品设计"
         
         // Act
         viewModel.onThemeSelect(newTheme)
@@ -85,7 +88,53 @@ class MainViewModelTest {
     }
     
     @Test
-    fun `mainViewModel_onSaveInspiration_withEmptyContent_showsError()`() = runTest {
+    fun `mainViewModel_onSearchKeywordChange_filtersInspirations`() = runTest {
+        // Arrange - Add some test inspirations
+        val inspirations = listOf(
+            Inspiration(content = "产品设计的灵感", themeName = "产品设计", wordCount = 8),
+            Inspiration(content = "技术开发的内容", themeName = "技术开发", wordCount = 7),
+            Inspiration(content = "生活感悟的记录", themeName = "生活感悟", wordCount = 7)
+        )
+        inspirations.forEach { inspiration ->
+            mockRepository.saveInspiration(inspiration)
+        }
+        testDispatcher.scheduler.advanceUntilIdle()
+        
+        // Act - Search for "设计"
+        viewModel.onSearchKeywordChange("设计")
+        testDispatcher.scheduler.advanceUntilIdle()
+        
+        // Assert - Should only show inspiration containing "设计"
+        val state = viewModel.uiState.value
+        assertThat(state.inspirations).hasSize(1)
+        assertThat(state.inspirations[0].content).contains("设计")
+    }
+    
+    @Test
+    fun `mainViewModel_onThemeFilter_filtersByTheme`() = runTest {
+        // Arrange - Add inspirations with different themes
+        val inspirations = listOf(
+            Inspiration(content = "产品1", themeName = "产品设计", wordCount = 3),
+            Inspiration(content = "产品2", themeName = "产品设计", wordCount = 3),
+            Inspiration(content = "技术1", themeName = "技术开发", wordCount = 3)
+        )
+        inspirations.forEach { inspiration ->
+            mockRepository.saveInspiration(inspiration)
+        }
+        testDispatcher.scheduler.advanceUntilIdle()
+        
+        // Act - Filter by "产品设计" theme
+        viewModel.onThemeFilter("产品设计")
+        testDispatcher.scheduler.advanceUntilIdle()
+        
+        // Assert - Should only show product design inspirations
+        val state = viewModel.uiState.value
+        assertThat(state.inspirations).hasSize(2)
+        assertThat(state.inspirations.map { it.themeName }).containsExactly("产品设计", "产品设计")
+    }
+    
+    @Test
+    fun `mainViewModel_onSaveInspiration_withEmptyContent_showsError`() = runTest {
         // Arrange
         viewModel.onContentChange("") // Empty content
         
@@ -100,7 +149,7 @@ class MainViewModelTest {
     }
     
     @Test
-    fun `mainViewModel_onSaveInspiration_withValidContent_savesAndClearsInput()`() = runTest {
+    fun `mainViewModel_onSaveInspiration_withValidContent_savesAndClearsInput`() = runTest {
         // Arrange
         val testContent = "这是一个有效的灵感内容"
         viewModel.onContentChange(testContent)
@@ -112,47 +161,72 @@ class MainViewModelTest {
         // Assert
         val updatedState = viewModel.uiState.value
         assertThat(updatedState.currentContent).isEmpty() // Content should be cleared after save
-        assertThat(updatedState.inspirations).hasSize(1) // One inspiration should be saved
-        assertThat(updatedState.inspirations[0].content).isEqualTo(testContent)
+        
+        // Verify inspiration was saved by checking all inspirations
+        val allInspirations = mockRepository.getAllInspirations()
+        val inspirations = mutableListOf<Inspiration>()
+        allInspirations.collect { list ->
+            inspirations.clear()
+            inspirations.addAll(list)
+        }
+        testDispatcher.scheduler.advanceUntilIdle()
+        
+        assertThat(inspirations).hasSize(1) // One inspiration should be saved
+        assertThat(inspirations[0].content).isEqualTo(testContent)
     }
     
     @Test
-    fun `mainViewModel_onDeleteInspiration_removesInspiration()`() = runTest {
+    fun `mainViewModel_onDeleteInspiration_removesInspiration`() = runTest {
         // Arrange
         val testContent = "要删除的灵感"
+        
+        // Save an inspiration first
         viewModel.onContentChange(testContent)
         viewModel.onSaveInspiration()
         testDispatcher.scheduler.advanceUntilIdle()
         
-        val savedInspiration = viewModel.uiState.value.inspirations[0]
+        // Get the saved inspiration
+        val allInspirations = mutableListOf<Inspiration>()
+        mockRepository.getAllInspirations().collect { list ->
+            allInspirations.clear()
+            allInspirations.addAll(list)
+        }
+        testDispatcher.scheduler.advanceUntilIdle()
+        
+        assertThat(allInspirations).hasSize(1)
+        val savedInspiration = allInspirations[0]
         
         // Act
         viewModel.onDeleteInspiration(savedInspiration.id)
         testDispatcher.scheduler.advanceUntilIdle()
         
         // Assert
-        val updatedState = viewModel.uiState.value
-        assertThat(updatedState.inspirations).isEmpty() // Inspiration should be removed
+        val updatedInspirations = mutableListOf<Inspiration>()
+        mockRepository.getAllInspirations().collect { list ->
+            updatedInspirations.clear()
+            updatedInspirations.addAll(list)
+        }
+        testDispatcher.scheduler.advanceUntilIdle()
+        
+        assertThat(updatedInspirations).isEmpty() // Inspiration should be removed
     }
     
     @Test
-    fun `mainViewModel_loadThemes_loadsDistinctThemesFromRepository()`() = runTest {
-        // Arrange
+    fun `mainViewModel_loadThemes_loadsDistinctThemesFromRepository`() = runTest {
+        // Arrange - Add inspirations with different themes
         val inspirations = listOf(
             Inspiration(content = "灵感1", themeName = "产品设计", wordCount = 3),
-            Inspiration(content = "灵感2", themeName = "技术开发", wordCount = 3),
-            Inspiration(content = "灵感3", themeName = "产品设计", wordCount = 3),
+            Inspiration(content = "灵感2", themeName = "产品设计", wordCount = 3),
+            Inspiration(content = "灵感3", themeName = "技术开发", wordCount = 3),
             Inspiration(content = "灵感4", themeName = "生活感悟", wordCount = 3)
         )
-        
-        // Save inspirations directly to repository (bypassing ViewModel to isolate the test)
         inspirations.forEach { inspiration ->
             mockRepository.saveInspiration(inspiration)
         }
         testDispatcher.scheduler.advanceUntilIdle()
         
         // Create a fresh ViewModel instance to load themes from repository
-        val freshViewModel = MainViewModel(mockRepository)
+        val freshViewModel = MainViewModel(mockRepository, mockThemeRepository)
         testDispatcher.scheduler.advanceUntilIdle()
         
         // Assert - ViewModel should load the 3 distinct themes from repository

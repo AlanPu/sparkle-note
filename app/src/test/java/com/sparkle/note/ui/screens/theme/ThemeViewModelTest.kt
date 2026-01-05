@@ -1,162 +1,108 @@
 package com.sparkle.note.ui.screens.theme
 
-import com.sparkle.note.domain.model.Inspiration
-import com.sparkle.note.data.repository.MockInspirationRepository
+import com.sparkle.note.domain.model.Theme
+import com.sparkle.note.data.repository.MockThemeRepository
 import com.google.common.truth.Truth.assertThat
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Test
 
 /**
- * Unit tests for ThemeViewModel.
- * Tests theme management functionality including CRUD operations and statistics.
+ * Unit tests for ThemeViewModel using new theme architecture.
+ * Tests theme management functionality with independent theme entities.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 class ThemeViewModelTest {
     
     private lateinit var viewModel: ThemeViewModel
-    private lateinit var mockRepository: MockInspirationRepository
+    private lateinit var mockThemeRepository: MockThemeRepository
     
     @Before
     fun setup() {
-        mockRepository = MockInspirationRepository()
-        viewModel = ThemeViewModel(mockRepository)
+        mockThemeRepository = MockThemeRepository()
+        viewModel = ThemeViewModel(mockThemeRepository)
     }
     
     @Test
-    fun themeViewModel_initialState_hasEmptyThemesAndZeroStats() = runTest {
+    fun themeViewModel_initialState_loadsDefaultThemes() = runTest {
         // Given: ViewModel is newly created
         
         // When: Get initial state
         val initialState = viewModel.uiState.value
         
-        // Then: Should have empty themes and zero stats
-        assertThat(initialState.themes).isEmpty()
+        // Then: Should have default themes loaded
+        assertThat(initialState.themes).isNotEmpty()
+        assertThat(initialState.themes.map { it.name }).contains("未分类")
         assertThat(initialState.totalInspirations).isEqualTo(0)
         assertThat(initialState.isLoading).isFalse()
         assertThat(initialState.errorMessage).isNull()
     }
     
     @Test
-    fun themeViewModel_loadThemes_withData_loadsCorrectStatistics() = runTest {
-        // Given: Repository has some inspirations
-        val inspirations = listOf(
-            Inspiration(content = "产品1", themeName = "产品设计", wordCount = 3),
-            Inspiration(content = "产品2", themeName = "产品设计", wordCount = 3),
-            Inspiration(content = "技术1", themeName = "技术开发", wordCount = 3),
-            Inspiration(content = "生活1", themeName = "生活感悟", wordCount = 3)
-        )
-        inspirations.forEach { 
-            runBlocking { mockRepository.saveInspiration(it) }
-        }
+    fun themeViewModel_addTheme_withValidName_createsNewTheme() = runTest {
+        // Given: ViewModel with existing themes
+        val newThemeName = "读书笔记"
         
-        // When: Load themes (triggered in init)
-        runBlocking { 
-            // Force reload by creating new ViewModel
-            viewModel = ThemeViewModel(mockRepository)
-        }
+        // When: Add a new theme
+        viewModel.addTheme(newThemeName)
         
-        // Then: Should have correct theme statistics
+        // Then: New theme should be created
         val state = viewModel.uiState.value
-        assertThat(state.themes).hasSize(3)
-        assertThat(state.totalInspirations).isEqualTo(4)
-        
-        // Check individual theme counts
-        val productTheme = state.themes.find { it.name == "产品设计" }
-        assertThat(productTheme?.inspirationCount).isEqualTo(2)
-        
-        val techTheme = state.themes.find { it.name == "技术开发" }
-        assertThat(techTheme?.inspirationCount).isEqualTo(1)
-        
-        val lifeTheme = state.themes.find { it.name == "生活感悟" }
-        assertThat(lifeTheme?.inspirationCount).isEqualTo(1)
+        assertThat(state.themes.map { it.name }).contains(newThemeName)
+        assertThat(state.successMessage).contains("读书笔记创建成功")
+        assertThat(state.errorMessage).isNull()
     }
     
     @Test
-    fun themeViewModel_addTheme_withValidName_addsSuccessfully() = runTest {
-        // Given: Repository has some existing themes
-        val existingInspirations = listOf(
-            Inspiration(content = "产品1", themeName = "产品设计", wordCount = 3),
-            Inspiration(content = "技术1", themeName = "技术开发", wordCount = 3)
-        )
-        existingInspirations.forEach { 
-            runBlocking { mockRepository.saveInspiration(it) }
-        }
+    fun themeViewModel_addTheme_withEmptyName_showsError() = runTest {
+        // Given: ViewModel ready to add theme
         
-        // When: Add a new theme by creating an inspiration with it
-        val newThemeInspiration = Inspiration(content = "新主题内容", themeName = "读书笔记", wordCount = 5)
-        runBlocking { mockRepository.saveInspiration(newThemeInspiration) }
-        
-        // Force reload
-        runBlocking { 
-            viewModel = ThemeViewModel(mockRepository)
-        }
-        
-        // Then: New theme should appear in statistics
-        val state = viewModel.uiState.value
-        assertThat(state.themes).hasSize(3)
-        
-        val newTheme = state.themes.find { it.name == "读书笔记" }
-        assertThat(newTheme).isNotNull()
-        assertThat(newTheme?.inspirationCount).isEqualTo(1)
-    }
-    
-    @Test
-    fun themeViewModel_editTheme_withValidName_updatesAllInspirations() = runTest {
-        // Given: Repository has inspirations with a theme to edit
-        val inspirations = listOf(
-            Inspiration(content = "产品1", themeName = "产品设计", wordCount = 3),
-            Inspiration(content = "产品2", themeName = "产品设计", wordCount = 3),
-            Inspiration(content = "技术1", themeName = "技术开发", wordCount = 3)
-        )
-        inspirations.forEach { 
-            runBlocking { mockRepository.saveInspiration(it) }
-        }
-        
-        // When: Edit theme name
-        runBlocking { viewModel.editTheme("产品设计", "产品策划") }
-        
-        // Then: All inspirations should have the new theme name
-        val allInspirations = runBlocking { mockRepository.getAllInspirations().first() }
-        val updatedProductInspirations = allInspirations.filter { it.themeName == "产品策划" }
-        assertThat(updatedProductInspirations).hasSize(2)
-        
-        val oldThemeInspirations = allInspirations.filter { it.themeName == "产品设计" }
-        assertThat(oldThemeInspirations).isEmpty()
-    }
-    
-    @Test
-    fun themeViewModel_editTheme_withExistingName_showsError() = runTest {
-        // Given: Repository has existing themes
-        val inspirations = listOf(
-            Inspiration(content = "产品1", themeName = "产品设计", wordCount = 3),
-            Inspiration(content = "技术1", themeName = "技术开发", wordCount = 3)
-        )
-        inspirations.forEach { 
-            runBlocking { mockRepository.saveInspiration(it) }
-        }
-        
-        // When: Try to edit theme to an existing name
-        runBlocking { viewModel.editTheme("产品设计", "技术开发") }
+        // When: Try to add theme with empty name
+        viewModel.addTheme("")
         
         // Then: Should show error
         val state = viewModel.uiState.value
-        assertThat(state.errorMessage).contains("主题名称已存在")
+        assertThat(state.errorMessage).contains("主题名称不能为空")
+        assertThat(state.successMessage).isNull()
     }
     
     @Test
-    fun themeViewModel_editTheme_withBlankName_showsError() = runTest {
-        // Given: Repository has existing themes
-        val inspirations = listOf(
-            Inspiration(content = "产品1", themeName = "产品设计", wordCount = 3)
-        )
-        inspirations.forEach { 
-            runBlocking { mockRepository.saveInspiration(it) }
-        }
+    fun themeViewModel_addTheme_withDuplicateName_showsError() = runTest {
+        // Given: Existing theme
+        val existingThemeName = "产品设计"
         
-        // When: Try to edit theme with blank name
-        runBlocking { viewModel.editTheme("产品设计", "") }
+        // When: Try to add duplicate theme
+        viewModel.addTheme(existingThemeName)
+        
+        // Then: Should show error
+        val state = viewModel.uiState.value
+        assertThat(state.errorMessage).contains("主题已存在")
+        assertThat(state.successMessage).isNull()
+    }
+    
+    @Test
+    fun themeViewModel_editTheme_withValidName_updatesTheme() = runTest {
+        // Given: Existing theme
+        val oldName = "产品设计"
+        val newName = "产品策划"
+        
+        // When: Edit theme name
+        viewModel.editTheme(oldName, newName)
+        
+        // Then: Theme should be updated
+        val state = viewModel.uiState.value
+        assertThat(state.themes.map { it.name }).contains(newName)
+        assertThat(state.themes.map { it.name }).doesNotContain(oldName)
+        assertThat(state.successMessage).contains("已更新为")
+    }
+    
+    @Test
+    fun themeViewModel_editTheme_withEmptyName_showsError() = runTest {
+        // Given: Existing theme
+        
+        // When: Try to edit with empty name
+        viewModel.editTheme("产品设计", "")
         
         // Then: Should show error
         val state = viewModel.uiState.value
@@ -164,61 +110,37 @@ class ThemeViewModelTest {
     }
     
     @Test
-    fun themeViewModel_deleteTheme_movesInspirationsToDefaultTheme() = runTest {
-        // Given: Repository has inspirations with a theme to delete
-        val inspirations = listOf(
-            Inspiration(content = "产品1", themeName = "产品设计", wordCount = 3),
-            Inspiration(content = "产品2", themeName = "产品设计", wordCount = 3),
-            Inspiration(content = "技术1", themeName = "技术开发", wordCount = 3)
-        )
-        inspirations.forEach { 
-            runBlocking { mockRepository.saveInspiration(it) }
-        }
+    fun themeViewModel_editTheme_withDuplicateName_showsError() = runTest {
+        // Given: Multiple existing themes
         
-        // When: Delete a theme
-        runBlocking { viewModel.deleteTheme("产品设计") }
+        // When: Try to edit to existing name
+        viewModel.editTheme("产品设计", "技术开发")
         
-        // Then: Inspirations should be moved to default theme
-        val allInspirations = runBlocking { mockRepository.getAllInspirations().first() }
-        val defaultThemeInspirations = allInspirations.filter { it.themeName == "未分类" }
-        assertThat(defaultThemeInspirations).hasSize(2)
-        
-        val deletedThemeInspirations = allInspirations.filter { it.themeName == "产品设计" }
-        assertThat(deletedThemeInspirations).isEmpty()
+        // Then: Should show error
+        val state = viewModel.uiState.value
+        assertThat(state.errorMessage).contains("主题名称已存在")
     }
     
     @Test
-    fun themeViewModel_deleteTheme_withNoInspirations_succeeds() = runTest {
-        // Given: Repository has themes but no inspirations for one theme
-        val inspirations = listOf(
-            Inspiration(content = "技术1", themeName = "技术开发", wordCount = 3),
-            Inspiration(content = "生活1", themeName = "生活感悟", wordCount = 3)
-        )
-        inspirations.forEach { 
-            runBlocking { mockRepository.saveInspiration(it) }
-        }
+    fun themeViewModel_deleteTheme_succeeds() = runTest {
+        // Given: Existing theme
+        val themeToDelete = "产品设计"
         
-        // When: Delete a theme that has no inspirations
-        runBlocking { viewModel.deleteTheme("产品设计") } // This theme doesn't exist
+        // When: Delete theme
+        viewModel.deleteTheme(themeToDelete)
         
-        // Then: Should succeed without errors
-        val allInspirations = runBlocking { mockRepository.getAllInspirations().first() }
-        assertThat(allInspirations).hasSize(2)
-        // No change since theme didn't exist
+        // Then: Theme should be deleted
+        val state = viewModel.uiState.value
+        assertThat(state.themes.map { it.name }).doesNotContain(themeToDelete)
+        assertThat(state.successMessage).contains("已删除")
     }
     
     @Test
     fun themeViewModel_deleteDefaultTheme_showsError() = runTest {
-        // Given: Repository has default theme
-        val inspirations = listOf(
-            Inspiration(content = "内容1", themeName = "未分类", wordCount = 3)
-        )
-        inspirations.forEach { 
-            runBlocking { mockRepository.saveInspiration(it) }
-        }
+        // Given: Default theme exists
         
         // When: Try to delete default theme
-        runBlocking { viewModel.deleteTheme("未分类") }
+        viewModel.deleteTheme("未分类")
         
         // Then: Should show error
         val state = viewModel.uiState.value
@@ -226,26 +148,77 @@ class ThemeViewModelTest {
     }
     
     @Test
+    fun themeViewModel_changeSortOrder_updatesThemeOrder() = runTest {
+        // Given: Multiple themes exist
+        viewModel.addTheme("A主题")
+        viewModel.addTheme("C主题")
+        viewModel.addTheme("B主题")
+        
+        // When: Change sort order
+        viewModel.changeSortOrder(ThemeSortBy.NAME)
+        
+        // Then: Themes should be sorted by name
+        val state = viewModel.uiState.value
+        val themeNames = state.themes.map { it.name }
+        assertThat(themeNames).isEqualTo(themeNames.sorted())
+    }
+    
+    @Test
     fun themeViewModel_clearError_removesErrorMessage() = runTest {
-        // Given: ViewModel has an error
-        runBlocking { viewModel.addTheme("") } // This will cause an error
-        val stateWithError = viewModel.uiState.value
-        assertThat(stateWithError.errorMessage).isNotNull()
+        // Given: ViewModel with error state
+        viewModel.addTheme("") // This will cause error
         
         // When: Clear error
         viewModel.clearError()
         
         // Then: Error should be cleared
-        val stateAfterClear = viewModel.uiState.value
-        assertThat(stateAfterClear.errorMessage).isNull()
+        val state = viewModel.uiState.value
+        assertThat(state.errorMessage).isNull()
+    }
+    
+    @Test
+    fun themeViewModel_refreshThemes_updatesThemeList() = runTest {
+        // Given: ViewModel with themes
+        val initialThemeCount = viewModel.uiState.value.themes.size
+        
+        // When: Refresh themes
+        viewModel.refreshThemes()
+        
+        // Then: Theme list should be refreshed (same size, but reloaded)
+        val state = viewModel.uiState.value
+        assertThat(state.themes.size).isEqualTo(initialThemeCount)
     }
     
     @Test
     fun themeViewModel_themeInfo_dataClassWorksCorrectly() {
         // Given: ThemeInfo instances
-        val theme1 = ThemeInfo("产品设计", 5)
-        val theme2 = ThemeInfo("产品设计", 5)
-        val theme3 = ThemeInfo("技术开发", 3)
+        val theme1 = ThemeInfo(
+            name = "产品设计",
+            icon = "💡",
+            color = 0xFF4A90E2,
+            description = "",
+            inspirationCount = 5,
+            createdAt = System.currentTimeMillis(),
+            lastUsed = System.currentTimeMillis()
+        )
+        val theme2 = ThemeInfo(
+            name = "产品设计",
+            icon = "💡",
+            color = 0xFF4A90E2,
+            description = "",
+            inspirationCount = 5,
+            createdAt = System.currentTimeMillis(),
+            lastUsed = System.currentTimeMillis()
+        )
+        val theme3 = ThemeInfo(
+            name = "技术开发",
+            icon = "💡",
+            color = 0xFF4A90E2,
+            description = "",
+            inspirationCount = 3,
+            createdAt = System.currentTimeMillis(),
+            lastUsed = System.currentTimeMillis()
+        )
         
         // Then: Data class behavior should work correctly
         assertThat(theme1).isEqualTo(theme2)

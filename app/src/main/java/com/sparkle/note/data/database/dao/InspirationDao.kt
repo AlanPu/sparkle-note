@@ -25,10 +25,13 @@ interface InspirationDao {
     fun getAllInspirations(): Flow<List<InspirationEntity>>
     
     /**
-     * Gets distinct theme names from all inspirations.
-     */
-    @Query("SELECT DISTINCT theme_name FROM inspirations ORDER BY theme_name")
-    fun getDistinctThemes(): Flow<List<String>>
+ * Gets distinct theme names from all inspirations.
+ * Now themes are managed independently, this method is deprecated.
+ * Use ThemeDao.getAllThemes() instead.
+ */
+@Deprecated("Use ThemeDao.getAllThemes() instead", ReplaceWith("themeDao.getAllThemes()"))
+@Query("SELECT DISTINCT theme_name FROM inspirations ORDER BY theme_name")
+fun getDistinctThemes(): Flow<List<String>>
     
     /**
      * Searches inspirations by keyword in content and theme name.

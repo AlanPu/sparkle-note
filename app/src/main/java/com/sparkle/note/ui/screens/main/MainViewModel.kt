@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sparkle.note.domain.model.Inspiration
 import com.sparkle.note.domain.repository.InspirationRepository
+import com.sparkle.note.domain.repository.ThemeRepository
 import com.sparkle.note.utils.DeletionCache
 import com.sparkle.note.ui.screens.main.TimeFilter
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -18,7 +19,8 @@ import javax.inject.Inject
  */
 @HiltViewModel
 class MainViewModel @Inject constructor(
-    private val repository: InspirationRepository
+    private val repository: InspirationRepository,
+    private val themeRepository: ThemeRepository
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow(MainUiState())
@@ -138,11 +140,17 @@ class MainViewModel @Inject constructor(
                 
                 repository.saveInspiration(inspiration)
                 
+                // Update theme last used timestamp
+                themeRepository.updateThemeLastUsed(_uiState.value.selectedTheme)
+                
                 // Clear the input field
                 _uiState.update { it.copy(currentContent = "") }
                 
                 // Reload themes to include new theme if created
                 loadThemes()
+                
+                // Ensure inspirations are refreshed immediately
+                loadInspirations()
                 
                 _events.emit(MainEvent.ShowSuccess("灵感已保存"))
                 
@@ -258,24 +266,24 @@ class MainViewModel @Inject constructor(
                     return@launch
                 }
                 
-                // Check if theme already exists by reloading from database
-                val existingThemes = repository.getDistinctThemes().first()
-                if (existingThemes.contains(themeName)) {
+                // Check if theme already exists using theme repository
+                if (themeRepository.themeExists(themeName)) {
                     _events.emit(MainEvent.ShowError("主题已存在"))
                     return@launch
                 }
                 
-                // Create a dummy inspiration with the new theme to persist it
-                // This is necessary because themes are derived from existing inspirations
-                // Use a special marker content to identify theme-only inspirations
-                val dummyInspiration = Inspiration(
-                    content = "__THEME_MARKER__", // Special marker for theme-only inspirations
-                    themeName = themeName,
+                // Create new theme using theme repository
+                val newTheme = com.sparkle.note.domain.model.Theme(
+                    name = themeName,
+                    icon = "💡",
+                    color = 0xFF4A90E2,
+                    description = "",
                     createdAt = System.currentTimeMillis(),
-                    wordCount = 0
+                    lastUsed = System.currentTimeMillis(),
+                    inspirationCount = 0
                 )
                 
-                repository.saveInspiration(dummyInspiration)
+                themeRepository.createTheme(newTheme)
                 
                 // Set the new theme as selected first
                 _uiState.update { 
@@ -297,11 +305,7 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             repository.getAllInspirations()
                 .collect { inspirations ->
-                    // Filter out theme marker inspirations
-                    val filteredInspirations = inspirations.filter { 
-                        it.content != "__THEME_MARKER__"
-                    }
-                    _uiState.update { it.copy(allInspirations = filteredInspirations) }
+                    _uiState.update { it.copy(allInspirations = inspirations) }
                     applyFilters()
                 }
         }
@@ -309,24 +313,20 @@ class MainViewModel @Inject constructor(
     
     private fun loadThemes() {
         viewModelScope.launch {
-            repository.getDistinctThemes()
+            themeRepository.getAllThemes()
                 .collect { themes ->
-                    val allThemes = if (themes.isEmpty()) {
-                        listOf("未分类", "产品设计", "技术开发", "生活感悟")
-                    } else {
-                        themes
-                    }
+                    val themeNames = themes.map { it.name }
                     _uiState.update { currentState ->
                         // Preserve the current selected theme if it exists in the new theme list
                         val currentSelectedTheme = currentState.selectedTheme
-                        val newSelectedTheme = if (allThemes.contains(currentSelectedTheme)) {
+                        val newSelectedTheme = if (themeNames.contains(currentSelectedTheme)) {
                             currentSelectedTheme
                         } else {
-                            allThemes.firstOrNull() ?: "未分类"
+                            themeNames.firstOrNull() ?: "未分类"
                         }
                         
                         currentState.copy(
-                            themes = allThemes,
+                            themes = themeNames,
                             selectedTheme = newSelectedTheme
                         )
                     }
@@ -342,11 +342,8 @@ class MainViewModel @Inject constructor(
         // Apply search filter
         if (state.searchKeyword.isNotBlank()) {
             filteredInspirations = filteredInspirations.filter { inspiration ->
-                // Exclude theme marker inspirations from search
-                inspiration.content != "__THEME_MARKER__" && (
-                    inspiration.content.contains(state.searchKeyword, ignoreCase = true) ||
-                    inspiration.themeName.contains(state.searchKeyword, ignoreCase = true)
-                )
+                inspiration.content.contains(state.searchKeyword, ignoreCase = true) ||
+                inspiration.themeName.contains(state.searchKeyword, ignoreCase = true)
             }
         }
         
@@ -354,15 +351,11 @@ class MainViewModel @Inject constructor(
         if (state.isMultiThemeFilterEnabled && state.selectedFilterThemes.isNotEmpty()) {
             // Multi-theme filter
             filteredInspirations = filteredInspirations.filter { inspiration ->
-                // Exclude theme marker inspirations and apply theme filter
-                inspiration.content != "__THEME_MARKER__" && 
                 state.selectedFilterThemes.contains(inspiration.themeName)
             }
         } else if (state.selectedFilterTheme != null) {
             // Single theme filter
             filteredInspirations = filteredInspirations.filter { inspiration ->
-                // Exclude theme marker inspirations and apply theme filter
-                inspiration.content != "__THEME_MARKER__" && 
                 inspiration.themeName == state.selectedFilterTheme
             }
         }
@@ -370,27 +363,15 @@ class MainViewModel @Inject constructor(
         // Apply time filter
         filteredInspirations = when (state.selectedTimeFilter) {
             TimeFilter.TODAY -> {
-                filteredInspirations.filter { 
-                    // Exclude theme marker inspirations from time filter
-                    it.content != "__THEME_MARKER__" && isToday(it.createdAt, now) 
-                }
+                filteredInspirations.filter { isToday(it.createdAt, now) }
             }
             TimeFilter.THIS_WEEK -> {
-                filteredInspirations.filter { 
-                    // Exclude theme marker inspirations from time filter
-                    it.content != "__THEME_MARKER__" && isThisWeek(it.createdAt, now) 
-                }
+                filteredInspirations.filter { isThisWeek(it.createdAt, now) }
             }
             TimeFilter.THIS_MONTH -> {
-                filteredInspirations.filter { 
-                    // Exclude theme marker inspirations from time filter
-                    it.content != "__THEME_MARKER__" && isThisMonth(it.createdAt, now) 
-                }
+                filteredInspirations.filter { isThisMonth(it.createdAt, now) }
             }
-            TimeFilter.ALL -> filteredInspirations.filter { 
-                // Exclude theme marker inspirations from all results
-                it.content != "__THEME_MARKER__" 
-            }
+            TimeFilter.ALL -> filteredInspirations
         }
         
         _uiState.update { it.copy(inspirations = filteredInspirations) }

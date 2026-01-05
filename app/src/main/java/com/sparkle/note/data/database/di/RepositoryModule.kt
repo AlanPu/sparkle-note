@@ -3,7 +3,9 @@ package com.sparkle.note.data.database.di
 import android.app.Application
 import android.content.Context
 import com.sparkle.note.data.repository.InspirationRepositoryImpl
+import com.sparkle.note.data.repository.ThemeRepositoryImpl
 import com.sparkle.note.domain.repository.InspirationRepository
+import com.sparkle.note.domain.repository.ThemeRepository
 import com.sparkle.note.utils.BackupManager
 import dagger.Binds
 import dagger.Module
@@ -30,6 +32,16 @@ abstract class RepositoryModule {
     abstract fun bindInspirationRepository(
         inspirationRepositoryImpl: InspirationRepositoryImpl
     ): InspirationRepository
+    
+    /**
+     * Binds the ThemeRepository implementation.
+     * Makes ThemeRepositoryImpl available for dependency injection.
+     */
+    @Binds
+    @Singleton
+    abstract fun bindThemeRepository(
+        themeRepositoryImpl: ThemeRepositoryImpl
+    ): ThemeRepository
     
     companion object {
         @Provides

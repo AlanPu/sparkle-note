@@ -147,13 +147,8 @@ class AdvancedSearchViewModel @Inject constructor(
                 // Get all inspirations
                 val allInspirations = repository.getAllInspirations().first()
                 
-                // Filter out theme marker inspirations
-                val filteredInspirations = allInspirations.filter { 
-                    it.content != "__THEME_MARKER__"
-                }
-                
                 // Apply filters
-                var resultInspirations = filteredInspirations
+                var resultInspirations = allInspirations
                 
                 // Apply text search
                 if (currentState.searchQuery.isNotBlank()) {

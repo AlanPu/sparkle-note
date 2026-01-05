@@ -35,4 +35,5 @@ sealed class ValidationResult {
     object Valid : ValidationResult()
     object Empty : ValidationResult()
     object TooLong : ValidationResult()
+    data class Invalid(val reason: String = "Invalid") : ValidationResult()
 }

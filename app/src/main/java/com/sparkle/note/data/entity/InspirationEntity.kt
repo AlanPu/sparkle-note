@@ -3,16 +3,26 @@ package com.sparkle.note.data.entity
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.Index
+import androidx.room.ForeignKey
 
 /**
  * Entity representing an inspiration note in the database.
- * Uses flattened design where theme is stored as string directly.
+ * Now uses foreign key relationship with ThemeEntity for better data integrity.
  */
 @Entity(
     tableName = "inspirations",
     indices = [
         Index(value = ["content"]),
         Index(value = ["theme_name"])
+    ],
+    foreignKeys = [
+        ForeignKey(
+            entity = ThemeEntity::class,
+            parentColumns = ["name"],
+            childColumns = ["theme_name"],
+            onDelete = ForeignKey.CASCADE,
+            onUpdate = ForeignKey.CASCADE
+        )
     ]
 )
 data class InspirationEntity(

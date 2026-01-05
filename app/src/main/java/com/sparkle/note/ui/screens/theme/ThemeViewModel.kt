@@ -2,18 +2,24 @@ package com.sparkle.note.ui.screens.theme
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.sparkle.note.domain.repository.InspirationRepository
+import com.sparkle.note.domain.model.Theme
+import com.sparkle.note.domain.repository.ThemeRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
- * Data class representing a theme with its statistics.
+ * Data class representing a theme with its statistics for UI display.
  */
 data class ThemeInfo(
     val name: String,
-    val inspirationCount: Int
+    val icon: String,
+    val color: Long,
+    val description: String,
+    val inspirationCount: Int,
+    val createdAt: Long,
+    val lastUsed: Long
 )
 
 /**
@@ -24,16 +30,24 @@ data class ThemeManagementUiState(
     val totalInspirations: Int = 0,
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
-    val successMessage: String? = null
+    val successMessage: String? = null,
+    val sortBy: ThemeSortBy = ThemeSortBy.NAME
 )
 
 /**
+ * Theme sorting options.
+ */
+enum class ThemeSortBy {
+    NAME, LAST_USED, INSPIRATION_COUNT
+}
+
+/**
  * ViewModel for theme management functionality.
- * Handles theme CRUD operations and statistics.
+ * Handles theme CRUD operations using independent theme entities.
  */
 @HiltViewModel
 class ThemeViewModel @Inject constructor(
-    private val repository: InspirationRepository
+    private val themeRepository: ThemeRepository
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow(ThemeManagementUiState())
@@ -51,31 +65,35 @@ class ThemeViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = true) }
             
             try {
-                // Get all inspirations
-                val inspirations = repository.getAllInspirations().first()
-                
-                // Filter out theme marker inspirations
-                val realInspirations = inspirations.filter { 
-                    it.content != "__THEME_MARKER__"
+                // Get themes based on current sort order
+                val themesFlow = when (_uiState.value.sortBy) {
+                    ThemeSortBy.NAME -> themeRepository.getAllThemes()
+                    ThemeSortBy.LAST_USED -> themeRepository.getThemesByLastUsed()
+                    ThemeSortBy.INSPIRATION_COUNT -> themeRepository.getThemesByInspirationCount()
                 }
                 
-                // Group by theme and count (excluding theme markers)
-                val themeCounts = realInspirations
-                    .groupBy { it.themeName }
-                    .map { (theme, inspirations) ->
+                themesFlow.collect { themes ->
+                    val themeInfos = themes.map { theme ->
                         ThemeInfo(
-                            name = theme,
-                            inspirationCount = inspirations.size
+                            name = theme.name,
+                            icon = theme.icon,
+                            color = theme.color,
+                            description = theme.description,
+                            inspirationCount = theme.inspirationCount,
+                            createdAt = theme.createdAt,
+                            lastUsed = theme.lastUsed
                         )
                     }
-                    .sortedBy { it.name }
-                
-                _uiState.update {
-                    it.copy(
-                        themes = themeCounts,
-                        totalInspirations = realInspirations.size,
-                        isLoading = false
-                    )
+                    
+                    val totalInspirations = themes.sumOf { it.inspirationCount }
+                    
+                    _uiState.update {
+                        it.copy(
+                            themes = themeInfos,
+                            totalInspirations = totalInspirations,
+                            isLoading = false
+                        )
+                    }
                 }
             } catch (e: Exception) {
                 _uiState.update {
@@ -101,26 +119,23 @@ class ThemeViewModel @Inject constructor(
                 }
                 
                 // Check if theme already exists
-                val existingThemes = repository.getDistinctThemes().first()
-                if (existingThemes.contains(themeName)) {
+                if (themeRepository.themeExists(themeName)) {
                     _uiState.update { it.copy(errorMessage = "主题已存在") }
                     return@launch
                 }
                 
-                // Create a dummy inspiration with the new theme to persist it
-                // This is necessary because themes are derived from existing inspirations
-                // Use a special marker content to identify theme-only inspirations
-                val dummyInspiration = com.sparkle.note.domain.model.Inspiration(
-                    content = "__THEME_MARKER__", // Special marker for theme-only inspirations
-                    themeName = themeName,
+                // Create new theme
+                val newTheme = Theme(
+                    name = themeName,
+                    icon = "💡",
+                    color = 0xFF4A90E2,
+                    description = "",
                     createdAt = System.currentTimeMillis(),
-                    wordCount = 0
+                    lastUsed = System.currentTimeMillis(),
+                    inspirationCount = 0
                 )
                 
-                repository.saveInspiration(dummyInspiration)
-                
-                // Reload themes from database to ensure synchronization
-                loadThemes()
+                themeRepository.createTheme(newTheme)
                 
                 // Show success message and clear any error
                 _uiState.update { 
@@ -157,21 +172,27 @@ class ThemeViewModel @Inject constructor(
                 }
                 
                 // Check if new name already exists
-                val existingThemes = repository.getDistinctThemes().first()
-                if (existingThemes.contains(newName)) {
+                if (themeRepository.themeExists(newName)) {
                     _uiState.update { it.copy(errorMessage = "主题名称已存在") }
                     return@launch
                 }
                 
-                // Update all inspirations with the old theme name
-                val inspirations = repository.getInspirationsByTheme(oldName).first()
-                inspirations.forEach { inspiration ->
-                    val updatedInspiration = inspiration.copy(themeName = newName)
-                    repository.saveInspiration(updatedInspiration)
+                // Update theme name
+                themeRepository.updateThemeName(oldName, newName)
+                
+                // Show success message
+                _uiState.update { 
+                    it.copy(
+                        errorMessage = null,
+                        successMessage = "主题已更新为${newName}"
+                    )
                 }
                 
-                // Reload themes to reflect changes
-                loadThemes()
+                // Clear success message after delay
+                viewModelScope.launch {
+                    kotlinx.coroutines.delay(2000)
+                    _uiState.update { it.copy(successMessage = null) }
+                }
                 
             } catch (e: Exception) {
                 _uiState.update {
@@ -182,7 +203,7 @@ class ThemeViewModel @Inject constructor(
     }
     
     /**
-     * Delete theme and move all inspirations to "未分类".
+     * Delete theme.
      */
     fun deleteTheme(themeName: String) {
         viewModelScope.launch {
@@ -193,15 +214,22 @@ class ThemeViewModel @Inject constructor(
                     return@launch
                 }
                 
-                // Move all inspirations to "未分类"
-                val inspirations = repository.getInspirationsByTheme(themeName).first()
-                inspirations.forEach { inspiration ->
-                    val updatedInspiration = inspiration.copy(themeName = "未分类")
-                    repository.saveInspiration(updatedInspiration)
+                // Delete theme (inspirations will be moved to default theme via repository)
+                themeRepository.deleteTheme(themeName)
+                
+                // Show success message
+                _uiState.update { 
+                    it.copy(
+                        errorMessage = null,
+                        successMessage = "主题${themeName}已删除"
+                    )
                 }
                 
-                // Reload themes to reflect changes
-                loadThemes()
+                // Clear success message after delay
+                viewModelScope.launch {
+                    kotlinx.coroutines.delay(2000)
+                    _uiState.update { it.copy(successMessage = null) }
+                }
                 
             } catch (e: Exception) {
                 _uiState.update {
@@ -209,6 +237,14 @@ class ThemeViewModel @Inject constructor(
                 }
             }
         }
+    }
+    
+    /**
+     * Change theme sort order.
+     */
+    fun changeSortOrder(sortBy: ThemeSortBy) {
+        _uiState.update { it.copy(sortBy = sortBy) }
+        loadThemes()
     }
     
     /**
@@ -220,7 +256,6 @@ class ThemeViewModel @Inject constructor(
     
     /**
      * Refresh themes from database.
-     * This ensures synchronization with other screens.
      */
     fun refreshThemes() {
         loadThemes()

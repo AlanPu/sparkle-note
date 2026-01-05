@@ -70,7 +70,8 @@ fun MainScreen(
                 onContentChange = viewModel::onContentChange,
                 selectedTheme = uiState.selectedTheme,
                 onThemeSelect = viewModel::onThemeSelect,
-                onSave = viewModel::onSaveInspiration
+                onSave = viewModel::onSaveInspiration,
+                themes = uiState.themes // 传递动态主题列表
             )
             
             // Theme selector chips

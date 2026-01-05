@@ -2,8 +2,11 @@ package com.sparkle.note.data.database.di
 
 import android.content.Context
 import androidx.room.Room
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.sparkle.note.data.database.InspirationDatabase
 import com.sparkle.note.data.database.dao.InspirationDao
+import com.sparkle.note.data.database.dao.ThemeDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -22,6 +25,7 @@ object DatabaseModule {
     /**
      * Provides the Room database instance.
      * Uses singleton pattern to ensure single database instance.
+     * Includes migration from version 1 to 2 for independent theme management.
      */
     @Provides
     @Singleton
@@ -31,7 +35,7 @@ object DatabaseModule {
             InspirationDatabase::class.java,
             "inspiration_database"
         )
-        .fallbackToDestructiveMigration() // Simple migration strategy for demo
+        .addMigrations(com.sparkle.note.data.database.migration.MIGRATION_1_2)
         .build()
     }
     
@@ -43,5 +47,15 @@ object DatabaseModule {
     @Singleton
     fun provideInspirationDao(database: InspirationDatabase): InspirationDao {
         return database.inspirationDao()
+    }
+    
+    /**
+     * Provides the ThemeDao instance.
+     * DAO is used for theme management operations.
+     */
+    @Provides
+    @Singleton
+    fun provideThemeDao(database: InspirationDatabase): ThemeDao {
+        return database.themeDao()
     }
 }

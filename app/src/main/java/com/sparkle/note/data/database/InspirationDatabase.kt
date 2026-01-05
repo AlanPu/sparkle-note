@@ -5,20 +5,24 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import android.content.Context
 import com.sparkle.note.data.database.dao.InspirationDao
+import com.sparkle.note.data.database.dao.ThemeDao
 import com.sparkle.note.data.entity.InspirationEntity
+import com.sparkle.note.data.entity.ThemeEntity
 
 /**
  * Room database for Sparkle Note application.
- * Stores inspiration notes with optimized queries for theme management.
+ * Now supports independent theme management with foreign key relationships.
  */
 @Database(
-    entities = [InspirationEntity::class],
-    version = 1,
+    entities = [InspirationEntity::class, ThemeEntity::class],
+    version = 2,
     exportSchema = false
 )
 abstract class InspirationDatabase : RoomDatabase() {
     
     abstract fun inspirationDao(): InspirationDao
+    
+    abstract fun themeDao(): ThemeDao
     
     companion object {
         private const val DATABASE_NAME = "inspiration_database"

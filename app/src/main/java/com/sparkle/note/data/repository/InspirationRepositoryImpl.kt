@@ -14,13 +14,18 @@ import javax.inject.Singleton
  */
 @Singleton
 class InspirationRepositoryImpl @Inject constructor(
-    private val inspirationDao: com.sparkle.note.data.database.dao.InspirationDao
+    private val inspirationDao: com.sparkle.note.data.database.dao.InspirationDao,
+    private val themeDao: com.sparkle.note.data.database.dao.ThemeDao
 ) : com.sparkle.note.domain.repository.InspirationRepository {
     
     override suspend fun saveInspiration(inspiration: Inspiration): Result<Unit> {
         return try {
             val entity = inspiration.toEntity()
             inspirationDao.insert(entity)
+            
+            // 更新主题的最后使用时间和统计信息
+            updateThemeStats(inspiration.themeName)
+            
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
@@ -51,7 +56,13 @@ class InspirationRepositoryImpl @Inject constructor(
     
     override suspend fun deleteInspiration(id: Long): Result<Unit> {
         return try {
-            inspirationDao.deleteById(id)
+            // 获取被删除的灵感以更新主题统计
+            val inspiration = inspirationDao.getInspirationById(id)
+            inspiration?.let {
+                inspirationDao.deleteById(id)
+                // 更新主题统计信息
+                updateThemeStats(it.theme_name)
+            }
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
@@ -61,6 +72,8 @@ class InspirationRepositoryImpl @Inject constructor(
     override suspend fun deleteInspirationsByTheme(themeName: String): Result<Unit> {
         return try {
             inspirationDao.deleteByThemeName(themeName)
+            // 更新主题统计信息
+            updateThemeStats(themeName)
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
@@ -73,6 +86,23 @@ class InspirationRepositoryImpl @Inject constructor(
     
     override fun exportSingleToMarkdown(inspiration: Inspiration): String {
         return com.sparkle.note.utils.ExportManager.exportSingleToMarkdown(inspiration)
+    }
+    
+    /**
+     * 更新主题的统计信息，包括最后使用时间和灵感数量
+     */
+    private suspend fun updateThemeStats(themeName: String) {
+        try {
+            // 更新最后使用时间
+            themeDao.updateThemeLastUsed(themeName, System.currentTimeMillis())
+            
+            // 更新灵感数量
+            val count = inspirationDao.getInspirationCountByTheme(themeName)
+            themeDao.updateThemeInspirationCount(themeName, count.toInt())
+        } catch (e: Exception) {
+            // 记录错误但不影响主要功能
+            e.printStackTrace()
+        }
     }
 }
 

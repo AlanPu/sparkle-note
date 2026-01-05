@@ -27,6 +27,7 @@ fun QuickRecordSection(
     selectedTheme: String,
     onThemeSelect: (String) -> Unit,
     onSave: () -> Unit,
+    themes: List<String> = emptyList(), // 动态主题列表
     modifier: Modifier = Modifier
 ) {
     // Animation states
@@ -108,7 +109,8 @@ fun QuickRecordSection(
                 // Theme selector dropdown
                 ThemeSelector(
                     selectedTheme = selectedTheme,
-                    onThemeSelect = onThemeSelect
+                    onThemeSelect = onThemeSelect,
+                    themes = themes // 传递动态主题列表
                 )
                 
                 // Character count
@@ -154,6 +156,7 @@ fun QuickRecordSection(
 fun ThemeSelector(
     selectedTheme: String,
     onThemeSelect: (String) -> Unit,
+    themes: List<String> = emptyList(), // 动态主题列表
     modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -191,17 +194,14 @@ fun ThemeSelector(
             expanded = expanded,
             onDismissRequest = { expanded = false }
         ) {
-            // Common themes
-            val commonThemes = listOf(
-                "未分类",
-                "产品设计", 
-                "技术开发",
-                "生活感悟",
-                "读书笔记",
-                "工作思考"
-            )
+            // 使用动态主题列表，如果没有提供则显示默认主题
+            val displayThemes = if (themes.isEmpty()) {
+                listOf("未分类", "产品设计", "技术开发", "生活感悟", "读书笔记", "工作思考")
+            } else {
+                themes
+            }
             
-            commonThemes.forEach { theme ->
+            displayThemes.forEach { theme ->
                 DropdownMenuItem(
                     text = { 
                         Text(
