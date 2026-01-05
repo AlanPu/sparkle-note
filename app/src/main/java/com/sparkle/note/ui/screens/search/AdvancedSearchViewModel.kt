@@ -18,6 +18,8 @@ import javax.inject.Inject
 data class AdvancedSearchUiState(
     val searchQuery: String = "",
     val selectedTheme: String? = null,
+    val selectedThemes: List<String> = emptyList(), // Multi-theme support
+    val isMultiThemeMode: Boolean = false, // Toggle for multi-theme filtering
     val timeFilter: TimeFilter = TimeFilter.ALL,
     val searchResults: List<Inspiration> = emptyList(),
     val searchHistory: List<String> = emptyList(),
@@ -75,6 +77,42 @@ class AdvancedSearchViewModel @Inject constructor(
     }
     
     /**
+     * Toggles multi-theme mode.
+     */
+    fun toggleMultiThemeMode() {
+        _uiState.update { currentState ->
+            val newMode = !currentState.isMultiThemeMode
+            currentState.copy(
+                isMultiThemeMode = newMode,
+                selectedTheme = if (newMode) null else currentState.selectedTheme,
+                selectedThemes = if (newMode) currentState.selectedThemes else emptyList()
+            )
+        }
+    }
+    
+    /**
+     * Toggles a theme in multi-theme selection.
+     */
+    fun toggleThemeSelection(theme: String) {
+        _uiState.update { currentState ->
+            val currentThemes = currentState.selectedThemes.toMutableList()
+            if (currentThemes.contains(theme)) {
+                currentThemes.remove(theme)
+            } else {
+                currentThemes.add(theme)
+            }
+            currentState.copy(selectedThemes = currentThemes)
+        }
+    }
+    
+    /**
+     * Clears all selected themes.
+     */
+    fun clearAllSelectedThemes() {
+        _uiState.update { it.copy(selectedThemes = emptyList()) }
+    }
+    
+    /**
      * Updates the time filter.
      */
     fun updateTimeFilter(timeFilter: TimeFilter) {
@@ -86,7 +124,13 @@ class AdvancedSearchViewModel @Inject constructor(
      */
     fun performSearch() {
         val currentState = _uiState.value
-        if (currentState.searchQuery.isBlank() && currentState.selectedTheme == null) {
+        val hasThemeFilter = if (currentState.isMultiThemeMode) {
+            currentState.selectedThemes.isNotEmpty()
+        } else {
+            currentState.selectedTheme != null
+        }
+        
+        if (currentState.searchQuery.isBlank() && !hasThemeFilter) {
             _uiState.update { it.copy(errorMessage = "请输入搜索关键词或选择筛选条件") }
             return
         }
@@ -116,7 +160,13 @@ class AdvancedSearchViewModel @Inject constructor(
                 }
                 
                 // Apply theme filter
-                if (currentState.selectedTheme != null) {
+                if (currentState.isMultiThemeMode && currentState.selectedThemes.isNotEmpty()) {
+                    // Multi-theme filter
+                    filteredInspirations = filteredInspirations.filter { inspiration ->
+                        currentState.selectedThemes.contains(inspiration.themeName)
+                    }
+                } else if (currentState.selectedTheme != null) {
+                    // Single theme filter
                     filteredInspirations = filteredInspirations.filter { 
                         it.themeName == currentState.selectedTheme 
                     }

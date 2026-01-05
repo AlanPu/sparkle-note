@@ -5,9 +5,10 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.compose.currentBackStackEntryAsState
 import com.sparkle.note.ui.screens.backup.BackupManagementScreen
 import com.sparkle.note.ui.screens.batch.BatchOperationScreen
-import com.sparkle.note.ui.screens.main.FinalMainScreen
+import com.sparkle.note.ui.screens.main.EnhancedMainScreen
 import com.sparkle.note.ui.screens.search.AdvancedSearchScreen
 import com.sparkle.note.ui.screens.theme.ThemeManagementScreen
 
@@ -23,9 +24,15 @@ fun SparkleNoteNavGraph(
         navController = navController,
         startDestination = "main"
     ) {
-        // Main screen with optimized bottom input
+        // Main screen with enhanced theme management
         composable("main") {
-            FinalMainScreen(navController = navController)
+            EnhancedMainScreen(
+                navController = navController,
+                onThemeCreated = { 
+                    // Set result for theme management screen
+                    navController.previousBackStackEntry?.savedStateHandle?.set("theme_created", true)
+                }
+            )
         }
         
         // Backup management screen
@@ -56,9 +63,10 @@ fun SparkleNoteNavGraph(
         }
         
         // Theme management screen
-        composable("theme") {
+        composable("theme") { backStackEntry ->
             ThemeManagementScreen(
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
+                onThemeCreatedFromMain = backStackEntry.savedStateHandle.get<Boolean>("theme_created") ?: false
             )
         }
     }

@@ -23,7 +23,8 @@ data class ThemeManagementUiState(
     val themes: List<ThemeInfo> = emptyList(),
     val totalInspirations: Int = 0,
     val isLoading: Boolean = false,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val successMessage: String? = null
 )
 
 /**
@@ -101,9 +102,33 @@ class ThemeViewModel @Inject constructor(
                     return@launch
                 }
                 
-                // Theme is added automatically when first used in an inspiration
-                // For now, just reload to show the new theme if it exists
+                // Create a dummy inspiration with the new theme to persist it
+                // This is necessary because themes are derived from existing inspirations
+                val dummyInspiration = com.sparkle.note.domain.model.Inspiration(
+                    content = "",
+                    themeName = themeName,
+                    createdAt = System.currentTimeMillis(),
+                    wordCount = 0
+                )
+                
+                repository.saveInspiration(dummyInspiration)
+                
+                // Reload themes from database to ensure synchronization
                 loadThemes()
+                
+                // Show success message and clear any error
+                _uiState.update { 
+                    it.copy(
+                        errorMessage = null,
+                        successMessage = "主题${themeName}创建成功"
+                    )
+                }
+                
+                // Clear success message after delay
+                viewModelScope.launch {
+                    kotlinx.coroutines.delay(2000)
+                    _uiState.update { it.copy(successMessage = null) }
+                }
                 
             } catch (e: Exception) {
                 _uiState.update {
@@ -185,5 +210,13 @@ class ThemeViewModel @Inject constructor(
      */
     fun clearError() {
         _uiState.update { it.copy(errorMessage = null) }
+    }
+    
+    /**
+     * Refresh themes from database.
+     * This ensures synchronization with other screens.
+     */
+    fun refreshThemes() {
+        loadThemes()
     }
 }

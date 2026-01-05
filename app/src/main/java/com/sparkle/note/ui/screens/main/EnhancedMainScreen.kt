@@ -3,26 +3,35 @@ package com.sparkle.note.ui.screens.main
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
-import com.sparkle.note.ui.components.QuickRecordSection
+import com.sparkle.note.ui.components.EnhancedThemeSelector
+import com.sparkle.note.ui.components.MultiThemeSelector
 
 /**
- * Enhanced main screen with navigation and all features integrated.
- * Provides access to all Day 3 advanced features through top bar actions.
+ * Final enhanced main screen with complete theme management integration.
+ * Features:
+ * - Bottom input area for better mobile UX
+ * - Dynamic theme loading from ViewModel
+ * - Quick theme creation without leaving main screen
+ * - Quick theme management access
+ * - Maximum space for inspiration cards
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EnhancedMainScreen(
     navController: NavController = rememberNavController(),
-    viewModel: MainViewModel = hiltViewModel()
+    viewModel: MainViewModel = hiltViewModel(),
+    onThemeCreated: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -88,37 +97,141 @@ fun EnhancedMainScreen(
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = MaterialTheme.colorScheme.background,
+        bottomBar = {
+            // Bottom input section with complete theme management
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 2.dp
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 8.dp)
+                ) {
+                    // Theme selector and management row
+                    if (uiState.themes.isNotEmpty()) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "选择主题：",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            
+                            // Enhanced theme selector with quick creation
+                            EnhancedThemeSelector(
+                                selectedTheme = uiState.selectedTheme,
+                                onThemeSelect = viewModel::onThemeSelect,
+                                themes = uiState.themes,
+                                onCreateNewTheme = { newThemeName ->
+                                    // Create new theme by saving an inspiration with the new theme
+                                    // This will automatically add the theme to the list
+                                    viewModel.onThemeSelect(newThemeName)
+                                    // Notify that a theme was created for synchronization
+                                    onThemeCreated()
+                                },
+                                modifier = Modifier.weight(1f)
+                            )
+                            
+                            // Quick theme management access
+                            IconButton(
+                                onClick = { navController.navigate("theme") },
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Edit,
+                                    contentDescription = "管理主题",
+                                    modifier = Modifier.size(20.dp),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                        
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                    
+                    // Input and save row
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = androidx.compose.ui.Alignment.Bottom
+                    ) {
+                        // Text input field - takes most space
+                        OutlinedTextField(
+                            value = uiState.currentContent,
+                            onValueChange = viewModel::onContentChange,
+                            modifier = Modifier
+                                .weight(1f)
+                                .heightIn(min = 60.dp, max = 120.dp),
+                            placeholder = {
+                                Text(
+                                    text = "记录你的灵感...",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            },
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                                unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                                unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                            ),
+                            textStyle = MaterialTheme.typography.bodyMedium,
+                            maxLines = 4
+                        )
+                        
+                        // Save button
+                        FilledTonalButton(
+                            onClick = viewModel::onSaveInspiration,
+                            enabled = uiState.currentContent.isNotBlank() && uiState.currentContent.length <= 500,
+                            modifier = Modifier.height(48.dp),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = "保存",
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+                    
+                    // Character count
+                    Text(
+                        text = "${uiState.currentContent.length}/500",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (uiState.currentContent.length > 450) MaterialTheme.colorScheme.error
+                                else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 4.dp),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.End
+                    )
+                }
+            }
+        }
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Quick record section
-            QuickRecordSection(
-                content = uiState.currentContent,
-                onContentChange = viewModel::onContentChange,
-                selectedTheme = uiState.selectedTheme,
-                onThemeSelect = viewModel::onThemeSelect,
-                onSave = viewModel::onSaveInspiration
-            )
-            
-            // Theme selector chips
-            if (uiState.themes.isNotEmpty()) {
-                ThemeSelector(
-                    themes = uiState.themes,
-                    selectedTheme = uiState.selectedTheme,
-                    onThemeSelect = viewModel::onThemeSelect,
-                    modifier = Modifier.padding(horizontal = 16.dp)
-                )
-            }
-            
-            // Inspirations list
+            // Inspirations list - takes up most of the screen
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                contentPadding = PaddingValues(
+                    top = 8.dp,
+                    bottom = 8.dp,
+                    start = 12.dp,
+                    end = 12.dp
+                ),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(uiState.inspirations) { inspiration ->
                     com.sparkle.note.ui.components.InspirationCard(
@@ -131,13 +244,16 @@ fun EnhancedMainScreen(
                 }
             }
             
-            // Empty state
+            // Empty state with better spacing
             if (uiState.inspirations.isEmpty()) {
-                EmptyState(
+                Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(32.dp)
-                )
+                        .padding(24.dp),
+                    contentAlignment = androidx.compose.ui.Alignment.Center
+                ) {
+                    EmptyState()
+                }
             }
         }
     }

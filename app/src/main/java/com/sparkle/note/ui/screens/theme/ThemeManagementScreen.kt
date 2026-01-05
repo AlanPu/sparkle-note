@@ -24,13 +24,35 @@ import androidx.hilt.navigation.compose.hiltViewModel
 @Composable
 fun ThemeManagementScreen(
     viewModel: ThemeViewModel = hiltViewModel(),
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onThemeCreatedFromMain: Boolean = false
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var showAddDialog by remember { mutableStateOf(false) }
     var showEditDialog by remember { mutableStateOf(false) }
     var editingTheme by remember { mutableStateOf<String?>(null) }
     var themeToDelete by remember { mutableStateOf<String?>(null) }
+    
+    // Refresh themes when screen becomes visible
+    LaunchedEffect(Unit) {
+        viewModel.refreshThemes()
+    }
+    
+    // Refresh themes when a theme was created from main screen
+    LaunchedEffect(onThemeCreatedFromMain) {
+        if (onThemeCreatedFromMain) {
+            viewModel.refreshThemes()
+        }
+    }
+    
+    // Additional refresh when dialog closes (after theme creation)
+    LaunchedEffect(showAddDialog) {
+        if (!showAddDialog) {
+            // Small delay to ensure database transaction completes
+            kotlinx.coroutines.delay(100)
+            viewModel.refreshThemes()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -73,6 +95,25 @@ fun ThemeManagementScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
+            // Success message
+            if (uiState.successMessage != null) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                    )
+                ) {
+                    Text(
+                        text = uiState.successMessage ?: "",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.padding(16.dp)
+                    )
+                }
+            }
+            
             // Theme statistics
             Card(
                 modifier = Modifier

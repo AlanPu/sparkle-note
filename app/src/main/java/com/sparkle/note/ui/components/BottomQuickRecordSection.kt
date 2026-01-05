@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.*
 /**
  * Optimized bottom input component for quick recording.
  * Compact design suitable for bottom placement with maximum space efficiency.
+ * Features dynamic theme loading from ViewModel.
  */
 @Composable
 fun BottomQuickRecordSection(
@@ -29,6 +30,7 @@ fun BottomQuickRecordSection(
     selectedTheme: String,
     onThemeSelect: (String) -> Unit,
     onSave: () -> Unit,
+    themes: List<String> = emptyList(),
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -80,10 +82,11 @@ fun BottomQuickRecordSection(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
             ) {
-                // Compact theme selector
+                // Compact theme selector with dynamic themes
                 CompactThemeSelector(
                     selectedTheme = selectedTheme,
                     onThemeSelect = onThemeSelect,
+                    themes = themes,
                     modifier = Modifier.weight(1f)
                 )
                 
@@ -118,13 +121,14 @@ fun BottomQuickRecordSection(
 }
 
 /**
- * Compact theme selector for bottom placement.
+ * Compact theme selector for bottom placement with dynamic theme support.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CompactThemeSelector(
     selectedTheme: String,
     onThemeSelect: (String) -> Unit,
+    themes: List<String>,
     modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -162,9 +166,7 @@ fun CompactThemeSelector(
             expanded = expanded,
             onDismissRequest = { expanded = false }
         ) {
-            // Get available themes (this should come from ViewModel in real implementation)
-            val themes = listOf("未分类", "产品设计", "技术开发", "生活感悟", "工作思考", "学习笔记")
-            
+            // Use dynamic themes instead of hardcoded list
             themes.forEach { theme ->
                 DropdownMenuItem(
                     text = { Text(theme) },
