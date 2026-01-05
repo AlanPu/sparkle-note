@@ -1,5 +1,7 @@
 package com.sparkle.note.ui.components
 
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -14,13 +16,14 @@ import androidx.compose.ui.unit.dp
  * Compact inspiration card for maximum display efficiency.
  * Optimized for list display with minimal spacing.
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun CompactInspirationCard(
     content: String,
     themeName: String,
     createdAtText: String,
     onClick: () -> Unit,
+    onLongClick: () -> Unit = {},
     onDelete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -35,13 +38,16 @@ fun CompactInspirationCard(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 4.dp),
+            .padding(horizontal = 12.dp, vertical = 4.dp)
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick
+            ),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
         shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        onClick = onClick
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Column(
             modifier = Modifier
@@ -115,13 +121,14 @@ fun CompactInspirationCard(
 /**
  * Ultra compact inspiration card for maximum density.
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun UltraCompactInspirationCard(
     content: String,
     themeName: String,
     createdAtText: String,
     onClick: () -> Unit,
+    onLongClick: () -> Unit = {},
     onDelete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -136,13 +143,16 @@ fun UltraCompactInspirationCard(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 2.dp),
+            .padding(horizontal = 8.dp, vertical = 2.dp)
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick
+            ),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
         shape = RoundedCornerShape(8.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.5.dp),
-        onClick = onClick
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.5.dp)
     ) {
         Row(
             modifier = Modifier

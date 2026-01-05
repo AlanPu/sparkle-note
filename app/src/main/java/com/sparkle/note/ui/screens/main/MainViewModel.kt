@@ -391,6 +391,31 @@ class MainViewModel @Inject constructor(
         val monthInMillis = 30L * 24 * 60 * 60 * 1000L
         return now - timestamp < monthInMillis
     }
+    
+    /**
+     * Copies inspiration content to clipboard.
+     * @param content The content to copy
+     */
+    fun copyInspirationContent(content: String) {
+        viewModelScope.launch {
+            _events.emit(MainEvent.CopyToClipboard(content))
+            _events.emit(MainEvent.ShowSuccess("内容已复制到剪贴板"))
+        }
+    }
+    
+    /**
+     * Opens a link in the system browser.
+     * @param url The URL to open
+     */
+    fun openLink(url: String) {
+        viewModelScope.launch {
+            if (url.isNotBlank()) {
+                _events.emit(MainEvent.OpenLink(url))
+            } else {
+                _events.emit(MainEvent.ShowError("无效的链接"))
+            }
+        }
+    }
 }
 
 /**
@@ -421,4 +446,6 @@ sealed class MainEvent {
         val message: String,
         val deletedInspiration: com.sparkle.note.domain.model.Inspiration
     ) : MainEvent()
+    data class CopyToClipboard(val content: String) : MainEvent()
+    data class OpenLink(val url: String) : MainEvent()
 }

@@ -1,14 +1,21 @@
 package com.sparkle.note.ui.screens.main
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.sparkle.note.ui.components.InspirationCard
 import com.sparkle.note.ui.components.QuickRecordSection
+import com.sparkle.note.ui.components.InspirationCardLongPressMenu
 
 /**
  * Main screen of the Sparkle Note application.
@@ -22,6 +29,31 @@ fun MainScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    
+    // 长按菜单状态
+    var selectedInspiration by remember { mutableStateOf<com.sparkle.note.domain.model.Inspiration?>(null) }
+    var showLongPressMenu by remember { mutableStateOf(false) }
+    
+    // 长按处理函数
+    val handleLongPress: (com.sparkle.note.domain.model.Inspiration) -> Unit = { inspiration ->
+        selectedInspiration = inspiration
+        showLongPressMenu = true
+    }
+    
+    // 复制内容处理
+    val handleCopyContent: () -> Unit = {
+        selectedInspiration?.let { inspiration ->
+            viewModel.copyInspirationContent(inspiration.content)
+            showLongPressMenu = false
+        }
+    }
+    
+    // 打开链接处理
+    val handleOpenLink: (String) -> Unit = { url ->
+        viewModel.openLink(url)
+        showLongPressMenu = false
+    }
     
     // Handle events
     LaunchedEffect(Unit) {
@@ -37,8 +69,35 @@ fun MainScreen(
                     snackbarHostState.showSnackbar(event.message)
                     // TODO: Add undo action to Snackbar
                 }
+                is MainEvent.CopyToClipboard -> {
+                    // 复制到剪贴板
+                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                    val clip = android.content.ClipData.newPlainText("笔记内容", event.content)
+                    clipboard.setPrimaryClip(clip)
+                    snackbarHostState.showSnackbar("内容已复制到剪贴板")
+                }
+                is MainEvent.OpenLink -> {
+                    // 打开链接
+                    try {
+                        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(event.url))
+                        intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                        context.startActivity(intent)
+                    } catch (e: Exception) {
+                        snackbarHostState.showSnackbar("无法打开链接: ${e.message}")
+                    }
+                }
             }
         }
+    }
+    
+    // 显示长按菜单
+    if (showLongPressMenu && selectedInspiration != null) {
+        InspirationCardLongPressMenu(
+            inspiration = selectedInspiration!!,
+            onDismiss = { showLongPressMenu = false },
+            onCopyContent = handleCopyContent,
+            onOpenLink = handleOpenLink
+        )
     }
     
     Scaffold(
@@ -96,6 +155,7 @@ fun MainScreen(
                         themeName = inspiration.themeName,
                         createdAtText = formatTimeAgo(inspiration.createdAt),
                         onClick = { /* Handle card click */ },
+                        onLongClick = { handleLongPress(inspiration) }, // 添加长按支持
                         onDelete = { viewModel.onDeleteInspiration(inspiration.id) }
                     )
                 }

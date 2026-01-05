@@ -1,5 +1,7 @@
 package com.sparkle.note.ui.components
 
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -20,13 +22,14 @@ import androidx.compose.ui.draw.alpha
  * Card component for displaying an inspiration note.
  * Shows content preview, theme, and creation time in Nordic design style.
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun InspirationCard(
     content: String,
     themeName: String,
     createdAtText: String,
     onClick: () -> Unit,
+    onLongClick: () -> Unit = {},
     onDelete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -58,12 +61,15 @@ fun InspirationCard(
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp)
             .scale(scale.value)
-            .alpha(alpha.value),
+            .alpha(alpha.value)
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick
+            ),
         colors = CardDefaults.cardColors(
             containerColor = Color(0xFF2A2A2A) // Nordic surface dark
         ),
-        shape = RoundedCornerShape(12.dp),
-        onClick = onClick
+        shape = RoundedCornerShape(12.dp)
     ) {
         Column(
             modifier = Modifier

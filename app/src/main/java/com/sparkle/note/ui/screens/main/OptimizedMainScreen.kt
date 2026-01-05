@@ -1,5 +1,10 @@
 package com.sparkle.note.ui.screens.main
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -8,11 +13,13 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.sparkle.note.ui.components.InspirationCardLongPressMenu
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.sparkle.note.ui.components.CompactInspirationCard
@@ -36,6 +43,10 @@ fun OptimizedMainScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     var isInputFocused by remember { mutableStateOf(false) }
     
+    // 长按菜单状态
+    var selectedInspiration by remember { mutableStateOf<com.sparkle.note.domain.model.Inspiration?>(null) }
+    var showLongPressMenu by remember { mutableStateOf(false) }
+    
     // Handle events
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
@@ -49,8 +60,41 @@ fun OptimizedMainScreen(
                 is MainEvent.ShowDeleteSuccess -> {
                     snackbarHostState.showSnackbar(event.message)
                 }
+                else -> {
+                    // Handle other events
+                }
             }
         }
+    }
+    
+    // 长按处理函数
+    val handleLongPress: (com.sparkle.note.domain.model.Inspiration) -> Unit = { inspiration ->
+        selectedInspiration = inspiration
+        showLongPressMenu = true
+    }
+    
+    // 复制内容处理
+    val handleCopyContent: () -> Unit = {
+        selectedInspiration?.let { inspiration ->
+            viewModel.copyInspirationContent(inspiration.content)
+            showLongPressMenu = false
+        }
+    }
+    
+    // 打开链接处理
+    val handleOpenLink: (String) -> Unit = { url ->
+        viewModel.openLink(url)
+        showLongPressMenu = false
+    }
+    
+    // 显示长按菜单
+    if (showLongPressMenu && selectedInspiration != null) {
+        InspirationCardLongPressMenu(
+            inspiration = selectedInspiration!!,
+            onDismiss = { showLongPressMenu = false },
+            onCopyContent = handleCopyContent,
+            onOpenLink = handleOpenLink
+        )
     }
     
     Scaffold(
@@ -241,6 +285,7 @@ fun OptimizedMainScreen(
                         themeName = inspiration.themeName,
                         createdAtText = formatTimeAgo(inspiration.createdAt),
                         onClick = { /* Handle card click */ },
+                        onLongClick = { handleLongPress(inspiration) }, // 添加长按支持
                         onDelete = { viewModel.onDeleteInspiration(inspiration.id) }
                     )
                 }
