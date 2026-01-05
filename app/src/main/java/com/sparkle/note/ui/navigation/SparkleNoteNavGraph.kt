@@ -26,13 +26,7 @@ fun SparkleNoteNavGraph(
     ) {
         // Main screen with enhanced theme management
         composable("main") {
-            EnhancedMainScreen(
-                navController = navController,
-                onThemeCreated = { 
-                    // Set result for theme management screen
-                    navController.previousBackStackEntry?.savedStateHandle?.set("theme_created", true)
-                }
-            )
+            EnhancedMainScreen(navController = navController)
         }
         
         // Backup management screen
@@ -63,10 +57,9 @@ fun SparkleNoteNavGraph(
         }
         
         // Theme management screen
-        composable("theme") { backStackEntry ->
+        composable("theme") {
             ThemeManagementScreen(
-                onNavigateBack = { navController.popBackStack() },
-                onThemeCreatedFromMain = backStackEntry.savedStateHandle.get<Boolean>("theme_created") ?: false
+                onNavigateBack = { navController.popBackStack() }
             )
         }
     }

@@ -54,8 +54,13 @@ class ThemeViewModel @Inject constructor(
                 // Get all inspirations
                 val inspirations = repository.getAllInspirations().first()
                 
-                // Group by theme and count
-                val themeCounts = inspirations
+                // Filter out theme marker inspirations
+                val realInspirations = inspirations.filter { 
+                    it.content != "__THEME_MARKER__"
+                }
+                
+                // Group by theme and count (excluding theme markers)
+                val themeCounts = realInspirations
                     .groupBy { it.themeName }
                     .map { (theme, inspirations) ->
                         ThemeInfo(
@@ -68,7 +73,7 @@ class ThemeViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         themes = themeCounts,
-                        totalInspirations = inspirations.size,
+                        totalInspirations = realInspirations.size,
                         isLoading = false
                     )
                 }
@@ -104,8 +109,9 @@ class ThemeViewModel @Inject constructor(
                 
                 // Create a dummy inspiration with the new theme to persist it
                 // This is necessary because themes are derived from existing inspirations
+                // Use a special marker content to identify theme-only inspirations
                 val dummyInspiration = com.sparkle.note.domain.model.Inspiration(
-                    content = "",
+                    content = "__THEME_MARKER__", // Special marker for theme-only inspirations
                     themeName = themeName,
                     createdAt = System.currentTimeMillis(),
                     wordCount = 0

@@ -24,8 +24,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 @Composable
 fun ThemeManagementScreen(
     viewModel: ThemeViewModel = hiltViewModel(),
-    onNavigateBack: () -> Unit,
-    onThemeCreatedFromMain: Boolean = false
+    onNavigateBack: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var showAddDialog by remember { mutableStateOf(false) }
@@ -36,13 +35,6 @@ fun ThemeManagementScreen(
     // Refresh themes when screen becomes visible
     LaunchedEffect(Unit) {
         viewModel.refreshThemes()
-    }
-    
-    // Refresh themes when a theme was created from main screen
-    LaunchedEffect(onThemeCreatedFromMain) {
-        if (onThemeCreatedFromMain) {
-            viewModel.refreshThemes()
-        }
     }
     
     // Additional refresh when dialog closes (after theme creation)

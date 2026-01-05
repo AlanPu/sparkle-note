@@ -147,13 +147,18 @@ class AdvancedSearchViewModel @Inject constructor(
                 // Get all inspirations
                 val allInspirations = repository.getAllInspirations().first()
                 
+                // Filter out theme marker inspirations
+                val filteredInspirations = allInspirations.filter { 
+                    it.content != "__THEME_MARKER__"
+                }
+                
                 // Apply filters
-                var filteredInspirations = allInspirations
+                var resultInspirations = filteredInspirations
                 
                 // Apply text search
                 if (currentState.searchQuery.isNotBlank()) {
                     val query = currentState.searchQuery.lowercase()
-                    filteredInspirations = filteredInspirations.filter { inspiration ->
+                    resultInspirations = resultInspirations.filter { inspiration ->
                         inspiration.content.lowercase().contains(query) ||
                         inspiration.themeName.lowercase().contains(query)
                     }
@@ -162,28 +167,28 @@ class AdvancedSearchViewModel @Inject constructor(
                 // Apply theme filter
                 if (currentState.isMultiThemeMode && currentState.selectedThemes.isNotEmpty()) {
                     // Multi-theme filter
-                    filteredInspirations = filteredInspirations.filter { inspiration ->
+                    resultInspirations = resultInspirations.filter { inspiration ->
                         currentState.selectedThemes.contains(inspiration.themeName)
                     }
                 } else if (currentState.selectedTheme != null) {
                     // Single theme filter
-                    filteredInspirations = filteredInspirations.filter { 
+                    resultInspirations = resultInspirations.filter { 
                         it.themeName == currentState.selectedTheme 
                     }
                 }
                 
                 // Apply time filter
                 val now = System.currentTimeMillis()
-                filteredInspirations = when (currentState.timeFilter) {
-                    TimeFilter.TODAY -> filteredInspirations.filter { isToday(it.createdAt, now) }
-                    TimeFilter.THIS_WEEK -> filteredInspirations.filter { isThisWeek(it.createdAt, now) }
-                    TimeFilter.THIS_MONTH -> filteredInspirations.filter { isThisMonth(it.createdAt, now) }
-                    TimeFilter.ALL -> filteredInspirations
+                resultInspirations = when (currentState.timeFilter) {
+                    TimeFilter.TODAY -> resultInspirations.filter { isToday(it.createdAt, now) }
+                    TimeFilter.THIS_WEEK -> resultInspirations.filter { isThisWeek(it.createdAt, now) }
+                    TimeFilter.THIS_MONTH -> resultInspirations.filter { isThisMonth(it.createdAt, now) }
+                    TimeFilter.ALL -> resultInspirations
                 }
                 
                 _uiState.update { 
                     it.copy(
-                        searchResults = filteredInspirations,
+                        searchResults = resultInspirations,
                         isLoading = false
                     )
                 }

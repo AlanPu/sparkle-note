@@ -18,12 +18,9 @@ fun EnhancedThemeSelector(
     selectedTheme: String,
     onThemeSelect: (String) -> Unit,
     themes: List<String>,
-    onCreateNewTheme: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }
-    var showCreateDialog by remember { mutableStateOf(false) }
-    var newThemeName by remember { mutableStateOf("") }
     
     ExposedDropdownMenuBox(
         expanded = expanded,
@@ -69,85 +66,7 @@ fun EnhancedThemeSelector(
                     contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
                 )
             }
-            
-            HorizontalDivider()
-            
-            // Create new theme option
-            DropdownMenuItem(
-                text = { 
-                    Row(
-                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("新建主题")
-                    }
-                },
-                onClick = {
-                    showCreateDialog = true
-                    expanded = false
-                },
-                contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
-            )
         }
-    }
-    
-    // Create new theme dialog
-    if (showCreateDialog) {
-        AlertDialog(
-            onDismissRequest = { 
-                showCreateDialog = false
-                newThemeName = ""
-            },
-            title = { Text("创建新主题") },
-            text = {
-                Column {
-                    Text(
-                        text = "主题名称",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    
-                    Spacer(modifier = Modifier.height(8.dp))
-                    
-                    OutlinedTextField(
-                        value = newThemeName,
-                        onValueChange = { newThemeName = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("输入主题名称") },
-                        singleLine = true
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        if (newThemeName.isNotBlank()) {
-                            onCreateNewTheme(newThemeName)
-                            onThemeSelect(newThemeName)
-                            showCreateDialog = false
-                            newThemeName = ""
-                        }
-                    },
-                    enabled = newThemeName.isNotBlank()
-                ) {
-                    Text("创建")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { 
-                    showCreateDialog = false
-                    newThemeName = ""
-                }) {
-                    Text("取消")
-                }
-            }
-        )
     }
 }
 
@@ -160,12 +79,9 @@ fun QuickThemeSelector(
     selectedTheme: String,
     onThemeSelect: (String) -> Unit,
     themes: List<String>,
-    onCreateNewTheme: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }
-    var showCreateDialog by remember { mutableStateOf(false) }
-    var newThemeName by remember { mutableStateOf("") }
     
     ExposedDropdownMenuBox(
         expanded = expanded,
@@ -200,7 +116,7 @@ fun QuickThemeSelector(
             expanded = expanded,
             onDismissRequest = { expanded = false }
         ) {
-            // Existing themes
+            // Existing themes only
             themes.forEach { theme ->
                 DropdownMenuItem(
                     text = { Text(theme) },
@@ -211,76 +127,6 @@ fun QuickThemeSelector(
                     contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
                 )
             }
-            
-            if (themes.isNotEmpty()) {
-                HorizontalDivider()
-            }
-            
-            // Create new theme option
-            DropdownMenuItem(
-                text = { 
-                    Row(
-                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("新建主题", style = MaterialTheme.typography.labelMedium)
-                    }
-                },
-                onClick = {
-                    showCreateDialog = true
-                    expanded = false
-                },
-                contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
-            )
         }
-    }
-    
-    // Compact create new theme dialog
-    if (showCreateDialog) {
-        AlertDialog(
-            onDismissRequest = { 
-                showCreateDialog = false
-                newThemeName = ""
-            },
-            title = { Text("新建主题", style = MaterialTheme.typography.titleMedium) },
-            text = {
-                OutlinedTextField(
-                    value = newThemeName,
-                    onValueChange = { newThemeName = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("主题名称") },
-                    singleLine = true
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        if (newThemeName.isNotBlank()) {
-                            onCreateNewTheme(newThemeName)
-                            onThemeSelect(newThemeName)
-                            showCreateDialog = false
-                            newThemeName = ""
-                        }
-                    },
-                    enabled = newThemeName.isNotBlank()
-                ) {
-                    Text("创建")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { 
-                    showCreateDialog = false
-                    newThemeName = ""
-                }) {
-                    Text("取消")
-                }
-            }
-        )
     }
 }

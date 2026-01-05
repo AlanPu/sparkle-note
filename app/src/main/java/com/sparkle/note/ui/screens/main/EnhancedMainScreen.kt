@@ -30,8 +30,7 @@ import com.sparkle.note.ui.components.MultiThemeSelector
 @Composable
 fun EnhancedMainScreen(
     navController: NavController = rememberNavController(),
-    viewModel: MainViewModel = hiltViewModel(),
-    onThemeCreated: () -> Unit = {}
+    viewModel: MainViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -123,18 +122,11 @@ fun EnhancedMainScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             
-                            // Enhanced theme selector with quick creation
+                            // Enhanced theme selector (theme creation removed from main screen)
                             EnhancedThemeSelector(
                                 selectedTheme = uiState.selectedTheme,
                                 onThemeSelect = viewModel::onThemeSelect,
                                 themes = uiState.themes,
-                                onCreateNewTheme = { newThemeName ->
-                                    // Create new theme by saving an inspiration with the new theme
-                                    // This will automatically add the theme to the list
-                                    viewModel.onThemeSelect(newThemeName)
-                                    // Notify that a theme was created for synchronization
-                                    onThemeCreated()
-                                },
                                 modifier = Modifier.weight(1f)
                             )
                             

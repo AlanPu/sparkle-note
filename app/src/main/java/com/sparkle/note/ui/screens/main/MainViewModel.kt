@@ -267,8 +267,9 @@ class MainViewModel @Inject constructor(
                 
                 // Create a dummy inspiration with the new theme to persist it
                 // This is necessary because themes are derived from existing inspirations
+                // Use a special marker content to identify theme-only inspirations
                 val dummyInspiration = Inspiration(
-                    content = "",
+                    content = "__THEME_MARKER__", // Special marker for theme-only inspirations
                     themeName = themeName,
                     createdAt = System.currentTimeMillis(),
                     wordCount = 0
@@ -296,7 +297,11 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             repository.getAllInspirations()
                 .collect { inspirations ->
-                    _uiState.update { it.copy(allInspirations = inspirations) }
+                    // Filter out theme marker inspirations
+                    val filteredInspirations = inspirations.filter { 
+                        it.content != "__THEME_MARKER__"
+                    }
+                    _uiState.update { it.copy(allInspirations = filteredInspirations) }
                     applyFilters()
                 }
         }
@@ -337,8 +342,11 @@ class MainViewModel @Inject constructor(
         // Apply search filter
         if (state.searchKeyword.isNotBlank()) {
             filteredInspirations = filteredInspirations.filter { inspiration ->
-                inspiration.content.contains(state.searchKeyword, ignoreCase = true) ||
-                inspiration.themeName.contains(state.searchKeyword, ignoreCase = true)
+                // Exclude theme marker inspirations from search
+                inspiration.content != "__THEME_MARKER__" && (
+                    inspiration.content.contains(state.searchKeyword, ignoreCase = true) ||
+                    inspiration.themeName.contains(state.searchKeyword, ignoreCase = true)
+                )
             }
         }
         
@@ -346,11 +354,15 @@ class MainViewModel @Inject constructor(
         if (state.isMultiThemeFilterEnabled && state.selectedFilterThemes.isNotEmpty()) {
             // Multi-theme filter
             filteredInspirations = filteredInspirations.filter { inspiration ->
+                // Exclude theme marker inspirations and apply theme filter
+                inspiration.content != "__THEME_MARKER__" && 
                 state.selectedFilterThemes.contains(inspiration.themeName)
             }
         } else if (state.selectedFilterTheme != null) {
             // Single theme filter
             filteredInspirations = filteredInspirations.filter { inspiration ->
+                // Exclude theme marker inspirations and apply theme filter
+                inspiration.content != "__THEME_MARKER__" && 
                 inspiration.themeName == state.selectedFilterTheme
             }
         }
@@ -359,20 +371,26 @@ class MainViewModel @Inject constructor(
         filteredInspirations = when (state.selectedTimeFilter) {
             TimeFilter.TODAY -> {
                 filteredInspirations.filter { 
-                    isToday(it.createdAt, now) 
+                    // Exclude theme marker inspirations from time filter
+                    it.content != "__THEME_MARKER__" && isToday(it.createdAt, now) 
                 }
             }
             TimeFilter.THIS_WEEK -> {
                 filteredInspirations.filter { 
-                    isThisWeek(it.createdAt, now) 
+                    // Exclude theme marker inspirations from time filter
+                    it.content != "__THEME_MARKER__" && isThisWeek(it.createdAt, now) 
                 }
             }
             TimeFilter.THIS_MONTH -> {
                 filteredInspirations.filter { 
-                    isThisMonth(it.createdAt, now) 
+                    // Exclude theme marker inspirations from time filter
+                    it.content != "__THEME_MARKER__" && isThisMonth(it.createdAt, now) 
                 }
             }
-            TimeFilter.ALL -> filteredInspirations
+            TimeFilter.ALL -> filteredInspirations.filter { 
+                // Exclude theme marker inspirations from all results
+                it.content != "__THEME_MARKER__" 
+            }
         }
         
         _uiState.update { it.copy(inspirations = filteredInspirations) }
