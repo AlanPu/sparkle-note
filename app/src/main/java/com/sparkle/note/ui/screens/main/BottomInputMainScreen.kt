@@ -115,7 +115,7 @@ fun BottomInputMainScreen(
                 navigationIcon = {
                     IconButton(onClick = { navController.navigate("theme") }) {
                         Icon(
-                            imageVector = Icons.Default.Settings,
+                            imageVector = Icons.Default.Edit,
                             contentDescription = "主题管理"
                         )
                     }
@@ -135,7 +135,7 @@ fun BottomInputMainScreen(
                     }
                     IconButton(onClick = { navController.navigate("backup") }) {
                         Icon(
-                            imageVector = Icons.Default.Settings,
+                            imageVector = Icons.Default.Share,
                             contentDescription = "备份管理"
                         )
                     }

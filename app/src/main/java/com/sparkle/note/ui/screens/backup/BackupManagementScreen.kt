@@ -62,7 +62,7 @@ fun BackupManagementScreen(
                 contentColor = MaterialTheme.colorScheme.onPrimaryContainer
             ) {
                 Icon(
-                    imageVector = Icons.Default.Add, // Use Add icon instead of Backup
+                    imageVector = Icons.Default.Share,
                     contentDescription = "创建备份"
                 )
                 Spacer(modifier = Modifier.width(8.dp))
@@ -240,7 +240,7 @@ fun EmptyBackupView() {
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Icon(
-                    imageVector = Icons.Default.Share, // Use Share icon as backup icon
+                    imageVector = Icons.Default.Share,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(64.dp)
@@ -312,7 +312,7 @@ fun BackupItemCard(
                     modifier = Modifier.weight(1f)
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Refresh, // Use Refresh icon instead of Restore
+                        imageVector = Icons.Default.Refresh,
                         contentDescription = "恢复",
                         tint = MaterialTheme.colorScheme.primary
                     )
