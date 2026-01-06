@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sparkle.note.domain.model.Inspiration
 import com.sparkle.note.domain.repository.InspirationRepository
+import com.sparkle.note.domain.repository.ThemeRepository
 import com.sparkle.note.utils.SearchHistoryManager
 import com.sparkle.note.utils.SearchSuggestionManager
 import com.sparkle.note.ui.screens.main.TimeFilter
@@ -36,6 +37,7 @@ data class AdvancedSearchUiState(
 @HiltViewModel
 class AdvancedSearchViewModel @Inject constructor(
     private val repository: InspirationRepository,
+    private val themeRepository: ThemeRepository,
     private val searchHistoryManager: SearchHistoryManager
 ) : ViewModel() {
     
@@ -227,9 +229,10 @@ class AdvancedSearchViewModel @Inject constructor(
      */
     private fun loadAvailableThemes() {
         viewModelScope.launch {
-            repository.getDistinctThemes()
+            themeRepository.getAllThemes()
                 .collect { themes ->
-                    _uiState.update { it.copy(availableThemes = themes) }
+                    val themeNames = themes.map { it.name }
+                    _uiState.update { it.copy(availableThemes = themeNames) }
                 }
         }
     }
