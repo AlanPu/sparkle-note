@@ -7,6 +7,7 @@ import com.sparkle.note.data.repository.ThemeRepositoryImpl
 import com.sparkle.note.domain.repository.InspirationRepository
 import com.sparkle.note.domain.repository.ThemeRepository
 import com.sparkle.note.utils.BackupManager
+import com.sparkle.note.ui.theme.ThemeManager
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -51,5 +52,9 @@ abstract class RepositoryModule {
         @Provides
         @Singleton
         fun provideBackupManager(): BackupManager = BackupManager
+        
+        @Provides
+        @Singleton
+        fun provideThemeManager(application: Application): ThemeManager = ThemeManager(application)
     }
 }

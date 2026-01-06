@@ -31,6 +31,23 @@ android {
                 "proguard-rules.pro"
             )
         }
+        debug {
+            // Debug配置
+        }
+    }
+    
+    // 配置APK输出文件名
+    applicationVariants.configureEach {
+        outputs.configureEach {
+            if (this is com.android.build.gradle.internal.api.ApkVariantOutputImpl) {
+                val buildType = buildType.name
+                outputFileName = when (buildType) {
+                    "release" -> "sparkle-note.apk"
+                    "debug" -> "sparkle-note-debug.apk"
+                    else -> "sparkle-note-${buildType}.apk"
+                }
+            }
+        }
     }
     
     compileOptions {
@@ -105,5 +122,6 @@ dependencies {
     androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.6.5")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+    androidTestImplementation("com.google.truth:truth:1.4.2")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 }

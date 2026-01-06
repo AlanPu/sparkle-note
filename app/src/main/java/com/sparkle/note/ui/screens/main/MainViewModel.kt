@@ -193,10 +193,6 @@ class MainViewModel @Inject constructor(
                 return@launch
             }
             
-            // For simplicity, we'll get the first cached item
-            // In a production app, you might want to track the last deleted ID
-            val lastDeletedId = deletionCache.size() // This is just a placeholder
-            
             // Since we don't have direct access to the last deleted item,
             // we'll need to modify the approach
             _events.emit(MainEvent.ShowError("撤销功能暂不可用"))

@@ -108,7 +108,7 @@ fun BottomInputMainScreen(
             CenterAlignedTopAppBar(
                 title = { 
                     Text(
-                        text = "Sparkle Note",
+                        text = "灵感笔记",
                         style = MaterialTheme.typography.titleLarge
                     )
                 },

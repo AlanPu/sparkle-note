@@ -25,6 +25,7 @@ import com.sparkle.note.ui.components.EnhancedThemeSelector
 import com.sparkle.note.ui.components.MultiThemeSelector
 import com.sparkle.note.R
 import androidx.compose.ui.res.stringResource
+import androidx.compose.material.icons.filled.Settings
 
 /**
  * Final enhanced main screen with complete theme management integration.
@@ -150,6 +151,12 @@ fun EnhancedMainScreen(
                         Icon(
                             imageVector = Icons.Default.Share,
                             contentDescription = stringResource(R.string.content_description_backup_management)
+                        )
+                    }
+                    IconButton(onClick = { navController.navigate("theme_settings") }) {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = stringResource(R.string.content_description_theme_settings)
                         )
                     }
                 },

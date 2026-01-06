@@ -4,29 +4,50 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
-import androidx.navigation.compose.currentBackStackEntryAsState
 import com.sparkle.note.ui.screens.backup.BackupManagementScreen
 import com.sparkle.note.ui.screens.batch.BatchOperationScreen
 import com.sparkle.note.ui.screens.main.EnhancedMainScreen
 import com.sparkle.note.ui.screens.search.AdvancedSearchScreen
 import com.sparkle.note.ui.screens.theme.ThemeManagementScreen
+import com.sparkle.note.ui.screens.settings.ThemeSettingsScreen
 
 /**
- * Navigation graph for the Sparkle Note application.
- * Integrates all Day 3 advanced features with proper navigation.
+ * Navigation graph for Sparkle Note application.
+ * Defines all navigation routes and their corresponding screens.
  */
 @Composable
 fun SparkleNoteNavGraph(
-    navController: NavHostController = rememberNavController()
+    navController: NavHostController
 ) {
     NavHost(
         navController = navController,
         startDestination = "main"
     ) {
-        // Main screen with enhanced theme management
+        // Main screen
         composable("main") {
             EnhancedMainScreen(navController = navController)
+        }
+        
+        // Advanced search screen
+        composable("search") {
+            AdvancedSearchScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onInspirationClick = { _ ->
+                    // Handle inspiration click in search results
+                    navController.popBackStack()
+                }
+            )
+        }
+        
+        // Batch operation screen
+        composable("batch") {
+            BatchOperationScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onInspirationClick = { _ ->
+                    // Handle inspiration click in batch operations
+                    navController.popBackStack()
+                }
+            )
         }
         
         // Backup management screen
@@ -36,30 +57,17 @@ fun SparkleNoteNavGraph(
             )
         }
         
-        // Batch operations screen
-        composable("batch") {
-            BatchOperationScreen(
-                onNavigateBack = { navController.popBackStack() },
-                onInspirationClick = { inspirationId ->
-                    // Handle inspiration detail navigation if needed
-                }
-            )
-        }
-        
-        // Advanced search screen
-        composable("search") {
-            AdvancedSearchScreen(
-                onNavigateBack = { navController.popBackStack() },
-                onInspirationClick = { inspirationId ->
-                    // Handle inspiration detail navigation if needed
-                }
-            )
-        }
-        
         // Theme management screen
         composable("theme") {
             ThemeManagementScreen(
                 onNavigateBack = { navController.popBackStack() }
+            )
+        }
+        
+        // Theme settings screen
+        composable("theme_settings") {
+            ThemeSettingsScreen(
+                navController = navController
             )
         }
     }
