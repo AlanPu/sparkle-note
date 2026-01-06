@@ -2,4 +2,128 @@
 <resources>
     <!-- App name -->
     <string name="app_name">灵感笔记</string>
+    
+    <!-- Main Screen -->
+    <string name="app_title">Sparkle Note</string>
+    <string name="hint_record_inspiration">记录你的灵感...</string>
+    <string name="hint_record_inspiration_short">记录灵感...</string>
+    <string name="label_select_theme">选择主题：</string>
+    <string name="content_description_theme_management">主题管理</string>
+    <string name="content_description_advanced_search">高级搜索</string>
+    <string name="content_description_batch_operation">批量操作</string>
+    <string name="content_description_backup_management">备份管理</string>
+    <string name="content_description_manage_themes">管理主题</string>
+    <string name="content_description_save">保存</string>
+    
+    <!-- Search -->
+    <string name="hint_search_inspiration">搜索灵感内容或主题...</string>
+    
+    <!-- Inspiration Card -->
+    <string name="content_description_delete">删除</string>
+    
+    <!-- Theme Emoji Mappings -->
+    <string name="theme_product_design">产品设计</string>
+    <string name="theme_tech_development">技术开发</string>
+    <string name="theme_life_insights">生活感悟</string>
+    <string name="theme_work_thinking">工作思考</string>
+    <string name="theme_learning_notes">学习笔记</string>
+    <string name="theme_creative_ideas">创意想法</string>
+    
+    <!-- Long Press Menu -->
+    <string name="dialog_title_note_actions">笔记操作</string>
+    <string name="action_copy_content">复制内容</string>
+    <string name="action_open_link">打开链接:</string>
+    <string name="action_close">关闭</string>
+    <string name="content_description_copy">复制</string>
+    <string name="content_description_open_link">打开链接</string>
+    
+    <!-- Delete Dialog -->
+    <string name="dialog_title_confirm_delete">确认删除</string>
+    <string name="dialog_message_confirm_delete">确定要删除这条灵感记录吗？此操作无法撤销。</string>
+    <string name="action_delete">删除</string>
+    <string name="action_cancel">取消</string>
+    
+    <!-- Empty State -->
+    <string name="state_no_inspirations_title">还没有灵感</string>
+    <string name="state_start_recording_hint">开始记录你的第一个想法吧</string>
+    <string name="action_create_first_inspiration">创建第一个灵感</string>
+    
+    <!-- Multi Theme Selector -->
+    <string name="action_clear_all">清除全部</string>
+    
+    <!-- Backup Management -->
+    <string name="screen_title_backup_management">备份管理</string>
+    <string name="content_description_back">返回</string>
+    <string name="action_create_backup">创建备份</string>
+    <string name="card_title_backup_statistics">备份统计</string>
+    <string name="stat_total_backups">总备份数</string>
+    <string name="stat_total_size">总大小</string>
+    <string name="stat_last_backup">最近备份</string>
+    <string name="text_none">无</string>
+    <string name="state_no_backups">暂无备份</string>
+    <string name="hint_create_first_backup">点击右下角按钮创建您的第一个备份</string>
+    <string name="label_backup_file">备份文件</string>
+    <string name="label_format_json">JSON</string>
+    <string name="action_restore">恢复</string>
+    <string name="action_share">分享</string>
+    <string name="dialog_title_create_backup">创建备份</string>
+    <string name="hint_backup_name">为备份输入一个名称：</string>
+    <string name="action_create">创建</string>
+    <string name="dialog_title_confirm_restore">确认恢复</string>
+    <string name="dialog_message_confirm_restore">确定要从以下备份恢复数据吗？</string>
+    <string name="label_backup_file_json">JSON备份文件</string>
+    <string name="warning_restore_operation">注意：恢复操作将覆盖当前数据，建议在恢复前创建新的备份。</string>
+    <string name="action_restore_confirm">恢复</string>
+    <string name="dialog_title_delete_theme">删除主题</string>
+    <string name="dialog_message_delete_theme">确定要删除主题"%1$s"吗？该主题下的所有灵感将被移动到"未分类"。</string>
+    <string name="dialog_title_input_theme_name">输入主题名称</string>
+    <string name="action_confirm">确定</string>
+    
+    <!-- Batch Operation -->
+    <string name="action_cancel_operation">取消</string>
+    <string name="action_batch_delete">删除</string>
+    <string name="action_batch_export">导出</string>
+    
+    <!-- Advanced Search -->
+    <string name="screen_title_advanced_search">高级搜索</string>
+    <string name="hint_advanced_search">搜索灵感内容、主题...</string>
+    <string name="action_clear_search">清除</string>
+    <string name="label_filter_conditions">筛选条件</string>
+    <string name="label_theme_filter">主题筛选：</string>
+    <string name="label_selected_count">已选择：%1$d</string>
+    <string name="chip_all_themes">全部主题</string>
+    <string name="label_time_filter">时间筛选</string>
+    <string name="chip_all_time">全部时间</string>
+    <string name="chip_today">今天</string>
+    <string name="chip_this_week">本周</string>
+    <string name="chip_this_month">本月</string>
+    <string name="state_no_results">未找到相关灵感</string>
+    
+    <!-- Snackbar Messages -->
+    <string name="message_copy_success">内容已复制到剪贴板</string>
+    <string name="message_link_error">无法打开链接: %1$s</string>
+    <string name="message_export_complete">导出完成: %1$s</string>
+    
+    <!-- Clipboard -->
+    <string name="clipboard_label_note_content">笔记内容</string>
+    
+    <!-- Export Manager -->
+    <string name="export_title_my_inspirations"># 我的灵感笔记</string>
+    <string name="export_text_no_inspirations">暂无灵感记录。</string>
+    <string name="export_label_export_time">导出时间：</string>
+    <string name="export_label_total_inspirations">灵感总数：</string>
+    <string name="export_label_theme_count">主题数量：</string>
+    <string name="export_format_theme_title">## %1$s（%2$d条）</string>
+    <string name="export_format_inspiration_details">**创建时间**</string>
+    <string name="export_label_word_count">**字数**</string>
+    <string name="export_label_theme">**主题**</string>
+    
+    <!-- Time Formatting -->
+    <string name="time_just_now">刚刚</string>
+    <string name="time_minutes_ago">%1$d分钟前</string>
+    <string name="time_hours_ago">%1$d小时前</string>
+    <string name="time_days_ago">%1$d天前</string>
+    
+    <!-- Share -->
+    <string name="share_title_backup">分享备份</string>
 </resources>

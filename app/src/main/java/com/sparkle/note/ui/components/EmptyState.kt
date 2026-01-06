@@ -8,6 +8,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.sparkle.note.R
 
 /**
  * Empty state component shown when there are no inspirations.
@@ -33,14 +35,14 @@ fun EmptyState(
         )
         
         Text(
-            text = "还没有灵感",
+            text = stringResource(R.string.state_no_inspirations_title),
             style = MaterialTheme.typography.headlineSmall,
             modifier = Modifier.padding(bottom = 8.dp),
             color = MaterialTheme.colorScheme.onBackground
         )
         
         Text(
-            text = "开始记录你的第一个想法吧",
+            text = stringResource(R.string.state_start_recording_hint),
             style = MaterialTheme.typography.bodyLarge,
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(bottom = 32.dp),
@@ -51,7 +53,7 @@ fun EmptyState(
             onClick = onCreateFirstInspiration,
             modifier = Modifier.fillMaxWidth(0.8f)
         ) {
-            Text(text = "创建第一个灵感")
+            Text(text = stringResource(R.string.action_create_first_inspiration))
         }
     }
 }

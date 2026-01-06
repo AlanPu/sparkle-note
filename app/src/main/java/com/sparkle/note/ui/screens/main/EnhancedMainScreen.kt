@@ -23,6 +23,8 @@ import com.sparkle.note.ui.components.InspirationCardLongPressMenu
 import androidx.navigation.compose.rememberNavController
 import com.sparkle.note.ui.components.EnhancedThemeSelector
 import com.sparkle.note.ui.components.MultiThemeSelector
+import com.sparkle.note.R
+import androidx.compose.ui.res.stringResource
 
 /**
  * Final enhanced main screen with complete theme management integration.
@@ -63,9 +65,9 @@ fun EnhancedMainScreen(
                 is MainEvent.CopyToClipboard -> {
                     // 复制到剪贴板
                     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                    val clip = android.content.ClipData.newPlainText("笔记内容", event.content)
+                    val clip = android.content.ClipData.newPlainText(context.getString(R.string.clipboard_label_note_content), event.content)
                     clipboard.setPrimaryClip(clip)
-                    snackbarHostState.showSnackbar("内容已复制到剪贴板")
+                    snackbarHostState.showSnackbar(context.getString(R.string.message_copy_success))
                 }
                 is MainEvent.OpenLink -> {
                     // 打开链接
@@ -74,7 +76,7 @@ fun EnhancedMainScreen(
                         intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
                         context.startActivity(intent)
                     } catch (e: Exception) {
-                        snackbarHostState.showSnackbar("无法打开链接: ${e.message}")
+                        snackbarHostState.showSnackbar(context.getString(R.string.message_link_error, e.message))
                     }
                 }
                 else -> {
@@ -119,7 +121,7 @@ fun EnhancedMainScreen(
             CenterAlignedTopAppBar(
                 title = { 
                     Text(
-                        text = "Sparkle Note",
+                        text = stringResource(R.string.app_title),
                         style = MaterialTheme.typography.titleLarge
                     )
                 },
@@ -127,7 +129,7 @@ fun EnhancedMainScreen(
                     IconButton(onClick = { navController.navigate("theme") }) {
                         Icon(
                             imageVector = Icons.Default.Edit,
-                            contentDescription = "主题管理"
+                            contentDescription = stringResource(R.string.content_description_theme_management)
                         )
                     }
                 },
@@ -135,19 +137,19 @@ fun EnhancedMainScreen(
                     IconButton(onClick = { navController.navigate("search") }) {
                         Icon(
                             imageVector = Icons.Default.Search,
-                            contentDescription = "高级搜索"
+                            contentDescription = stringResource(R.string.content_description_advanced_search)
                         )
                     }
                     IconButton(onClick = { navController.navigate("batch") }) {
                         Icon(
                             imageVector = Icons.Default.CheckCircle,
-                            contentDescription = "批量操作"
+                            contentDescription = stringResource(R.string.content_description_batch_operation)
                         )
                     }
                     IconButton(onClick = { navController.navigate("backup") }) {
                         Icon(
                             imageVector = Icons.Default.Share,
-                            contentDescription = "备份管理"
+                            contentDescription = stringResource(R.string.content_description_backup_management)
                         )
                     }
                 },
@@ -179,7 +181,7 @@ fun EnhancedMainScreen(
                             verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "选择主题：",
+                                text = stringResource(R.string.label_select_theme),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -199,7 +201,7 @@ fun EnhancedMainScreen(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Edit,
-                                    contentDescription = "管理主题",
+                                    contentDescription = stringResource(R.string.content_description_manage_themes),
                                     modifier = Modifier.size(20.dp),
                                     tint = MaterialTheme.colorScheme.primary
                                 )
@@ -224,7 +226,7 @@ fun EnhancedMainScreen(
                                 .heightIn(min = 60.dp, max = 120.dp),
                             placeholder = {
                                 Text(
-                                    text = "记录你的灵感...",
+                                    text = stringResource(R.string.hint_record_inspiration),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -250,7 +252,7 @@ fun EnhancedMainScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Check,
-                                contentDescription = "保存",
+                                contentDescription = stringResource(R.string.content_description_save),
                                 modifier = Modifier.size(20.dp)
                             )
                         }
@@ -291,7 +293,7 @@ fun EnhancedMainScreen(
                     com.sparkle.note.ui.components.InspirationCard(
                         content = inspiration.content,
                         themeName = inspiration.themeName,
-                        createdAtText = formatTimeAgo(inspiration.createdAt),
+                        createdAtText = formatTimeAgo(inspiration.createdAt, context),
                         onClick = { /* Handle card click */ },
                         onLongClick = { handleLongPress(inspiration) }, // 添加长按支持
                         onDelete = { viewModel.onDeleteInspiration(inspiration.id) }
@@ -317,14 +319,14 @@ fun EnhancedMainScreen(
 /**
  * Formats timestamp to relative time string.
  */
-private fun formatTimeAgo(timestamp: Long): String {
+private fun formatTimeAgo(timestamp: Long, context: Context): String {
     val now = System.currentTimeMillis()
     val diff = now - timestamp
     
     return when {
-        diff < 60_000 -> "刚刚"
-        diff < 3_600_000 -> "${diff / 60_000}分钟前"
-        diff < 86_400_000 -> "${diff / 3_600_000}小时前"
-        else -> "${diff / 86_400_000}天前"
+        diff < 60_000 -> context.getString(R.string.time_just_now)
+        diff < 3_600_000 -> context.getString(R.string.time_minutes_ago, diff / 60_000)
+        diff < 86_400_000 -> context.getString(R.string.time_hours_ago, diff / 3_600_000)
+        else -> context.getString(R.string.time_days_ago, diff / 86_400_000)
     }
 }
