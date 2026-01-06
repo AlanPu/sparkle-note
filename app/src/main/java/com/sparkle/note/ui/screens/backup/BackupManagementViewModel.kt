@@ -9,6 +9,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.io.File
+import java.util.Date
 import javax.inject.Inject
 
 /**
@@ -38,20 +39,26 @@ class BackupManagementViewModel @Inject constructor(
                 val backupFiles = if (backupDir.exists()) {
                     backupDir.listFiles { file -> file.name.endsWith(".json") }
                         ?.sortedByDescending { it.lastModified() }
-                        ?.map { it.name }
                         ?: emptyList()
                 } else {
                     emptyList()
                 }
                 
-                val totalSize = backupFiles.sumOf { fileName ->
-                    File(backupDir, fileName).length()
+                // Get the most recent backup date
+                val lastBackupDate = backupFiles.firstOrNull()?.lastModified()?.let { Date(it) }
+                
+                // Get backup file names
+                val backupFileNames = backupFiles.map { it.name }
+                
+                val totalSize = backupFiles.sumOf { file ->
+                    file.length()
                 }
                 
                 _uiState.update { 
                     it.copy(
-                        backups = backupFiles,
+                        backups = backupFileNames,
                         totalSize = totalSize,
+                        lastBackupDate = lastBackupDate,
                         isLoading = false
                     )
                 }
@@ -243,6 +250,7 @@ class BackupManagementViewModel @Inject constructor(
 data class BackupManagementUiState(
     val backups: List<String> = emptyList(), // List of backup filenames
     val totalSize: Long = 0,
+    val lastBackupDate: Date? = null, // Date of the most recent backup
     val isLoading: Boolean = false,
     val error: String? = null,
     val lastRestoreMessage: String? = null

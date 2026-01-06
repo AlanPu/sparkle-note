@@ -79,7 +79,7 @@ fun BackupManagementScreen(
             BackupStatisticsCard(
                 totalBackups = uiState.backups.size,
                 totalSize = uiState.totalSize,
-                lastBackupDate = null // Simplified - we don't have metadata anymore
+                lastBackupDate = uiState.lastBackupDate
             )
             
             Spacer(modifier = Modifier.height(16.dp))
