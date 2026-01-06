@@ -93,10 +93,11 @@ class AdvancedSearchViewModelTest {
     }
 
     /**
-     * Test multi-theme search functionality.
+     * Test unified multi-theme search functionality.
+     * No more single/multi mode toggle, always multi-select mode.
      */
     @Test
-    fun `multi-theme search should support multiple theme selection`() = runTest {
+    fun `multi-theme selection should work without mode toggle`() = runTest {
         // Given: Multiple themes available
         val mockThemes = listOf(
             Theme(name = "工作", icon = "💼"),
@@ -107,17 +108,58 @@ class AdvancedSearchViewModelTest {
         `when`(themeRepository.getAllThemes()).thenReturn(flowOf(mockThemes))
         `when`(searchHistoryManager.searchHistory).thenReturn(flowOf(emptyList()))
 
-        // When: User enables multi-theme mode and selects multiple themes
-        viewModel.toggleMultiThemeMode()
+        // When: User directly selects multiple themes (no mode toggle needed)
         viewModel.toggleThemeSelection("工作")
         viewModel.toggleThemeSelection("学习")
 
         // Then: UI state should reflect multi-theme selection
         val uiState = viewModel.uiState.value
-        assertTrue(uiState.isMultiThemeMode)
         assertEquals(2, uiState.selectedThemes.size)
         assertTrue(uiState.selectedThemes.contains("工作"))
         assertTrue(uiState.selectedThemes.contains("学习"))
+        assertFalse(uiState.selectedThemes.contains("生活"))
+    }
+
+    /**
+     * Test that search works when no themes are selected (searches all themes).
+     */
+    @Test
+    fun `search with no selected themes should search across all themes`() = runTest {
+        // Given: Mock inspirations with different themes
+        val mockThemes = listOf(
+            Theme(name = "工作", icon = "💼"),
+            Theme(name = "学习", icon = "📚")
+        )
+        
+        val mockInspirations = listOf(
+            Inspiration(
+                id = 1,
+                content = "今天的工作会议很有成效",
+                themeName = "工作",
+                createdAt = System.currentTimeMillis(),
+                wordCount = 12
+            ),
+            Inspiration(
+                id = 2,
+                content = "学习了新的编程技巧",
+                themeName = "学习",
+                createdAt = System.currentTimeMillis(),
+                wordCount = 9
+            )
+        )
+
+        `when`(themeRepository.getAllThemes()).thenReturn(flowOf(mockThemes))
+        `when`(searchHistoryManager.searchHistory).thenReturn(flowOf(emptyList()))
+        `when`(repository.getAllInspirations()).thenReturn(flowOf(mockInspirations))
+
+        // When: User searches without selecting any themes
+        viewModel.updateSearchQuery("工作")
+        viewModel.performSearch()
+
+        // Then: Should find results from all themes (no theme filtering applied)
+        val uiState = viewModel.uiState.value
+        assertEquals(1, uiState.searchResults.size)
+        assertEquals("今天的工作会议很有成效", uiState.searchResults[0].content)
     }
 
     /**

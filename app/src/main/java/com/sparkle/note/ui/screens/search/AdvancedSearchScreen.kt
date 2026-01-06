@@ -2,7 +2,6 @@ package com.sparkle.note.ui.screens.search
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
@@ -88,14 +87,10 @@ fun AdvancedSearchScreen(
             
             // Filter chips
             FilterChipsSection(
-                selectedTheme = uiState.selectedTheme,
-                onThemeChange = viewModel::updateSelectedTheme,
                 timeFilter = uiState.timeFilter,
                 onTimeFilterChange = viewModel::updateTimeFilter,
                 availableThemes = uiState.availableThemes,
-                isMultiThemeMode = uiState.isMultiThemeMode,
                 selectedThemes = uiState.selectedThemes,
-                onToggleMultiThemeMode = viewModel::toggleMultiThemeMode,
                 onToggleThemeSelection = viewModel::toggleThemeSelection,
                 onClearAllThemes = viewModel::clearAllSelectedThemes
             )
@@ -292,14 +287,10 @@ fun SearchHistorySection(
 
 @Composable
 fun FilterChipsSection(
-    selectedTheme: String?,
-    onThemeChange: (String?) -> Unit,
     timeFilter: TimeFilter,
     onTimeFilterChange: (TimeFilter) -> Unit,
     availableThemes: List<String>,
-    isMultiThemeMode: Boolean,
     selectedThemes: List<String>,
-    onToggleMultiThemeMode: () -> Unit,
     onToggleThemeSelection: (String) -> Unit,
     onClearAllThemes: () -> Unit
 ) {
@@ -321,96 +312,74 @@ fun FilterChipsSection(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "主题筛选：",
-                style = MaterialTheme.typography.labelMedium,
+            text = "主题筛选：",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "已选择：${selectedThemes.size}",
+                style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = "单选",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = if (!isMultiThemeMode) 
-                        MaterialTheme.colorScheme.primary 
-                    else 
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                
-                Switch(
-                    checked = isMultiThemeMode,
-                    onCheckedChange = { onToggleMultiThemeMode() },
-                    modifier = Modifier.padding(horizontal = 8.dp)
-                )
-                
-                Text(
-                    text = "多选",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = if (isMultiThemeMode) 
-                        MaterialTheme.colorScheme.primary 
-                    else 
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                )
+            if (selectedThemes.isNotEmpty()) {
+                TextButton(onClick = onClearAllThemes) {
+                    Text("清除全部")
+                }
             }
         }
-        
-        Spacer(modifier = Modifier.height(8.dp))
-        
-        if (isMultiThemeMode) {
-            // Multi-theme selection
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "已选择：${selectedThemes.size}",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                
+    }
+    
+    Spacer(modifier = Modifier.height(4.dp))
+    
+    // Unified multi-theme selection with flexible layout
+    Column(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        // "All themes" chip - selected when no specific themes are selected
+        FilterChip(
+            selected = selectedThemes.isEmpty(),
+            onClick = { 
                 if (selectedThemes.isNotEmpty()) {
-                    TextButton(onClick = onClearAllThemes) {
-                        Text("清除全部")
+                    onClearAllThemes()
+                }
+            },
+            label = { Text("全部主题") },
+            modifier = Modifier.padding(end = 8.dp, bottom = 8.dp)
+        )
+        
+        // Dynamic theme chips for multi-selection - using Column with wrap
+        Column(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            availableThemes.chunked(4).forEach { rowThemes ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    rowThemes.forEach { theme ->
+                        FilterChip(
+                            selected = selectedThemes.contains(theme),
+                            onClick = { onToggleThemeSelection(theme) },
+                            label = { Text(theme) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    // Fill remaining space if row has less than 4 items
+                    repeat(4 - rowThemes.size) {
+                        Spacer(modifier = Modifier.weight(1f))
                     }
                 }
-            }
-            
-            Spacer(modifier = Modifier.height(4.dp))
-            
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                items(availableThemes) { theme ->
-                    FilterChip(
-                        selected = selectedThemes.contains(theme),
-                        onClick = { onToggleThemeSelection(theme) },
-                        label = { Text(theme) }
-                    )
-                }
-            }
-        } else {
-            // Single theme selection
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                FilterChip(
-                    selected = selectedTheme == null,
-                    onClick = { onThemeChange(null) },
-                    label = { Text("全部主题") }
-                )
-                
-                // Dynamic theme chips
-                availableThemes.forEach { theme ->
-                    FilterChip(
-                        selected = selectedTheme == theme,
-                        onClick = { onThemeChange(theme) },
-                        label = { Text(theme) }
-                    )
-                }
+                Spacer(modifier = Modifier.height(8.dp))
             }
         }
+    }
         
         Spacer(modifier = Modifier.height(8.dp))
         
