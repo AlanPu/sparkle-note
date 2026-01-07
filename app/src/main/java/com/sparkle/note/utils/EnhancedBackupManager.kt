@@ -19,7 +19,8 @@ import javax.inject.Singleton
  */
 @Singleton
 class EnhancedBackupManager @Inject constructor(
-    private val inspirationRepository: InspirationRepository
+    private val inspirationRepository: InspirationRepository,
+    private val context: Context
 ) {
     
     companion object {
@@ -56,6 +57,29 @@ class EnhancedBackupManager @Inject constructor(
             manageBackupCount()
             
             Result.success(fileName)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    /**
+     * Creates a backup with specific content.
+     */
+    suspend fun createBackup(filename: String, content: String): Result<Unit> {
+        return try {
+            // Create backup directory if it doesn't exist
+            val backupDir = File(getBackupDirectory())
+            if (!backupDir.exists()) {
+                backupDir.mkdirs()
+            }
+            
+            val backupFile = File(backupDir, filename)
+            backupFile.writeText(content)
+            
+            // Manage backup count
+            manageBackupCount()
+            
+            Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -101,9 +125,22 @@ class EnhancedBackupManager @Inject constructor(
     }
     
     /**
+     * Reads backup file content.
+     */
+    fun readBackupFile(backupFileName: String): String {
+        val backupDir = File(getBackupDirectory())
+        val backupFile = File(backupDir, backupFileName)
+        return if (backupFile.exists()) {
+            backupFile.readText()
+        } else {
+            ""
+        }
+    }
+    
+    /**
      * Gets a list of all available backups.
      */
-    fun getBackupList(): List<String> {
+    fun getAllBackups(): List<String> {
         val backupDir = File(getBackupDirectory())
         if (!backupDir.exists()) {
             return emptyList()
@@ -113,6 +150,48 @@ class EnhancedBackupManager @Inject constructor(
             ?.sortedByDescending { it.lastModified() }
             ?.map { it.name }
             ?: emptyList()
+    }
+    
+    /**
+     * Gets a specific backup file.
+     */
+    fun getBackupFile(backupFileName: String): File {
+        val backupDir = File(getBackupDirectory())
+        return File(backupDir, backupFileName)
+    }
+    
+    /**
+     * Gets the URI for a backup file.
+     */
+    fun getBackupFileUri(backupFile: File): android.net.Uri {
+        return androidx.core.content.FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.fileprovider",
+            backupFile
+        )
+    }
+    
+    /**
+     * Gets the latest backup file.
+     */
+    fun getLatestBackup(): File? {
+        val backupDir = File(getBackupDirectory())
+        if (!backupDir.exists()) return null
+        
+        return backupDir.listFiles { file -> file.extension == "json" }
+            ?.sortedByDescending { it.lastModified() }
+            ?.firstOrNull()
+    }
+    
+    /**
+     * Calculates total size of all backups.
+     */
+    fun getTotalBackupSize(): Long {
+        val backupDir = File(getBackupDirectory())
+        if (!backupDir.exists()) return 0
+        
+        return backupDir.listFiles { file -> file.extension == "json" }
+            ?.sumOf { it.length() } ?: 0
     }
     
     /**
@@ -143,11 +222,7 @@ class EnhancedBackupManager @Inject constructor(
             }
             
             // Create share intent
-            val uri = androidx.core.content.FileProvider.getUriForFile(
-                context,
-                "${context.packageName}.fileprovider",
-                backupFile
-            )
+            val uri = getBackupFileUri(backupFile)
             
             val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
                 type = "application/json"
@@ -156,7 +231,7 @@ class EnhancedBackupManager @Inject constructor(
                 addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
             
-            val chooser = android.content.Intent.createChooser(shareIntent, "分享备份")
+            val chooser = android.content.Intent.createChooser(shareIntent, "Share Backup")
             context.startActivity(chooser)
             
             Result.success(Unit)
@@ -187,6 +262,13 @@ class EnhancedBackupManager @Inject constructor(
      * Gets the backup directory path.
      */
     private fun getBackupDirectory(): String {
-        return "/data/data/com.sparkle.note/files/$BACKUP_DIR"
+        return File(context.filesDir, BACKUP_DIR).absolutePath
+    }
+    
+    /**
+     * Gets the application context.
+     */
+    fun getContext(): Context {
+        return context
     }
 }

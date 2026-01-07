@@ -21,24 +21,31 @@ class ThemeRepositoryImpl @Inject constructor(
     
     override suspend fun createTheme(theme: Theme): Result<Unit> {
         return try {
+            println("🎯 开始创建主题: ${theme.name}")
+            
             // Validate theme name
             when (theme.validateName()) {
                 com.sparkle.note.domain.model.ValidationResult.Valid -> {
                     val entity = theme.toEntity()
-                    themeDao.insert(entity)
+                    val insertedId = themeDao.insert(entity)
+                    println("✅ 主题创建成功，ID: $insertedId, 名称: ${theme.name}")
                     Result.success(Unit)
                 }
                 com.sparkle.note.domain.model.ValidationResult.Empty -> {
+                    println("❌ 主题名称为空")
                     Result.failure(Exception("Theme name cannot be empty"))
                 }
                 com.sparkle.note.domain.model.ValidationResult.TooLong -> {
+                    println("❌ 主题名称过长: ${theme.name}")
                     Result.failure(Exception("Theme name is too long"))
                 }
                 is com.sparkle.note.domain.model.ValidationResult.Invalid -> {
+                    println("❌ 主题名称包含无效字符: ${theme.name}")
                     Result.failure(Exception("Theme name contains invalid characters"))
                 }
             }
         } catch (e: Exception) {
+            println("❌ 主题创建异常: ${e.message}")
             Result.failure(e)
         }
     }
@@ -95,7 +102,9 @@ class ThemeRepositoryImpl @Inject constructor(
     }
     
     override suspend fun themeExists(name: String): Boolean {
-        return themeDao.themeExists(name)
+        val exists = themeDao.themeExists(name)
+        println("🔍 检查主题存在: '$name' -> $exists")
+        return exists
     }
     
     override suspend fun updateThemeLastUsed(name: String): Result<Unit> {

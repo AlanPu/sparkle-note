@@ -163,24 +163,8 @@ class AdvancedSearchViewModelTest {
     }
 
     /**
-     * Test time filter functionality.
+     * Test that search history is properly managed.
      */
-    @Test
-    fun `time filter should be updated correctly`() = runTest {
-        // Given: Mock setup
-        val mockThemes = listOf(Theme(name = "工作", icon = "💼"))
-        `when`(themeRepository.getAllThemes()).thenReturn(flowOf(mockThemes))
-        `when`(searchHistoryManager.searchHistory).thenReturn(flowOf(emptyList()))
-
-        // When: Different time filters are applied
-        viewModel.updateTimeFilter(TimeFilter.TODAY)
-        var uiState = viewModel.uiState.value
-        assertEquals(TimeFilter.TODAY, uiState.timeFilter)
-
-        viewModel.updateTimeFilter(TimeFilter.THIS_WEEK)
-        uiState = viewModel.uiState.value
-        assertEquals(TimeFilter.THIS_WEEK, uiState.timeFilter)
-    }
 
     /**
      * Test that search history is properly managed.

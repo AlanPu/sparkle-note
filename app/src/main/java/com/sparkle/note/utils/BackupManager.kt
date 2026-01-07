@@ -71,6 +71,16 @@ object BackupManager {
     }
     
     /**
+     * Creates backup JSON from BackupData object.
+     * 
+     * @param backupData Backup data to serialize
+     * @return JSON string representation
+     */
+    fun createBackupFromData(backupData: BackupData): String {
+        return jsonFormat.encodeToString(backupData)
+    }
+    
+    /**
      * Generates backup filename with timestamp.
      * 
      * @return Filename string in format "sparkle-backup-YYYYMMDD-HHmmss.json"

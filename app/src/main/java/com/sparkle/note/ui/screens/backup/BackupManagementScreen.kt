@@ -18,6 +18,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import java.io.File
 
 /**
@@ -35,7 +37,19 @@ fun BackupManagementScreen(
     
     var showCreateBackupDialog by remember { mutableStateOf(false) }
     var showRestoreConfirmDialog by remember { mutableStateOf(false) }
+    var showImportPreviewDialog by remember { mutableStateOf(false) }
     var selectedBackup by remember { mutableStateOf<String?>(null) }
+    
+    // File picker launcher for importing external backups
+    val filePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument(),
+        onResult = { uri ->
+            if (uri != null) {
+                viewModel.validateExternalBackup(uri)
+                showImportPreviewDialog = true
+            }
+        }
+    )
     
     Scaffold(
         topBar = {
@@ -56,17 +70,38 @@ fun BackupManagementScreen(
             )
         },
         floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = { showCreateBackupDialog = true },
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+            Column(
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Default.Share,
-                    contentDescription = "创建备份"
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("创建备份")
+                // Import external backup button
+                ExtendedFloatingActionButton(
+                    onClick = { 
+                        filePickerLauncher.launch(arrayOf("application/json", "text/plain"))
+                    },
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Share,
+                        contentDescription = "导入备份"
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("导入备份")
+                }
+                
+                // Create backup button
+                ExtendedFloatingActionButton(
+                    onClick = { showCreateBackupDialog = true },
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Share,
+                        contentDescription = "创建备份"
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("创建备份")
+                }
             }
         }
     ) { paddingValues ->
@@ -83,6 +118,55 @@ fun BackupManagementScreen(
             )
             
             Spacer(modifier = Modifier.height(16.dp))
+            
+            // Import status message
+            if (uiState.lastImportMessage != null) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        .padding(bottom = 8.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (uiState.lastImportSuccess == true) {
+                            MaterialTheme.colorScheme.primaryContainer
+                        } else {
+                            MaterialTheme.colorScheme.errorContainer
+                        }
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = if (uiState.lastImportSuccess == true) {
+                                Icons.Default.CheckCircle
+                            } else {
+                                Icons.Default.Info
+                            },
+                            contentDescription = null,
+                            tint = if (uiState.lastImportSuccess == true) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.error
+                            }
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = uiState.lastImportMessage!!,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (uiState.lastImportSuccess == true) {
+                                MaterialTheme.colorScheme.onPrimaryContainer
+                            } else {
+                                MaterialTheme.colorScheme.onErrorContainer
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+            }
             
             // Backup list
             if (uiState.isLoading) {
@@ -142,6 +226,21 @@ fun BackupManagementScreen(
             }
         )
     }
+    
+    // Import preview dialog
+    if (showImportPreviewDialog && uiState.externalBackupPreview != null) {
+        ImportBackupPreviewDialog(
+            preview = uiState.externalBackupPreview!!,
+            onConfirm = {
+                viewModel.importExternalBackup()
+                showImportPreviewDialog = false
+            },
+            onDismiss = {
+                viewModel.clearExternalBackup()
+                showImportPreviewDialog = false
+            }
+        )
+    }
 }
 
 @Composable
@@ -158,72 +257,63 @@ fun BackupStatisticsCard(
             containerColor = MaterialTheme.colorScheme.primaryContainer
         )
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = "备份统计",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
-            )
-            
-            Spacer(modifier = Modifier.height(12.dp))
-            
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = totalBackups.toString(),
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                    Text(
-                        text = "总备份数",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                }
-                
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = formatFileSize(totalSize),
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                    Text(
-                        text = "总大小",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                }
-                
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = if (lastBackupDate != null) {
-                            SimpleDateFormat("MM/dd", Locale.getDefault()).format(lastBackupDate)
-                        } else {
-                            "无"
-                        },
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                    Text(
-                        text = "最近备份",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                }
+                Text(
+                    text = totalBackups.toString(),
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+                Text(
+                    text = "备份总数",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
+            
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = formatFileSize(totalSize),
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+                Text(
+                    text = "总大小",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
+            
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = if (lastBackupDate != null) {
+                        SimpleDateFormat("MM/dd", Locale.getDefault()).format(lastBackupDate)
+                    } else {
+                        "无"
+                    },
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+                Text(
+                    text = "最近备份",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
             }
         }
     }
@@ -251,7 +341,7 @@ fun EmptyBackupView() {
                 color = MaterialTheme.colorScheme.onSurface
             )
             Text(
-                text = "点击右下角按钮创建您的第一个备份",
+                text = "点击右下角按钮创建您的第一个备份，或导入外部备份文件",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
@@ -440,6 +530,120 @@ fun RestoreConfirmDialog(
                 )
             ) {
                 Text("恢复")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
+            }
+        }
+    )
+}
+
+@Composable
+fun ImportBackupPreviewDialog(
+    preview: com.sparkle.note.utils.BackupPreview,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("导入备份预览") },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = "备份文件包含以下数据：",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
+                
+                // Data summary
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text("灵感数量:", style = MaterialTheme.typography.bodyMedium)
+                            Text("${preview.totalInspirations}", style = MaterialTheme.typography.bodyMedium)
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text("主题数量:", style = MaterialTheme.typography.bodyMedium)
+                            Text("${preview.totalThemes}", style = MaterialTheme.typography.bodyMedium)
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text("导出时间:", style = MaterialTheme.typography.bodyMedium)
+                            Text(preview.exportTime, style = MaterialTheme.typography.bodyMedium)
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text("应用版本:", style = MaterialTheme.typography.bodyMedium)
+                            Text(preview.appVersion, style = MaterialTheme.typography.bodyMedium)
+                        }
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                // Theme distribution
+                if (preview.themeDistribution.isNotEmpty()) {
+                    Text(
+                        text = "主题分布:",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(12.dp)
+                        ) {
+                            preview.themeDistribution.forEach { (theme, count) ->
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(theme, style = MaterialTheme.typography.bodyMedium)
+                                    Text("$count", style = MaterialTheme.typography.bodyMedium)
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                Text(
+                    text = "注意：导入操作将合并到现有数据中，不会删除当前数据。",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text("导入")
             }
         },
         dismissButton = {

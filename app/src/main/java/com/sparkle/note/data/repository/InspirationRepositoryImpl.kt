@@ -20,14 +20,18 @@ class InspirationRepositoryImpl @Inject constructor(
     
     override suspend fun saveInspiration(inspiration: Inspiration): Result<Unit> {
         return try {
+            println("💾 开始保存灵感: ${inspiration.content.take(30)}...")
             val entity = inspiration.toEntity()
-            inspirationDao.insert(entity)
+            val insertedId = inspirationDao.insert(entity)
+            println("✅ 灵感保存成功，ID: $insertedId")
             
             // 更新主题的最后使用时间和统计信息
+            println("🔄 更新主题统计: ${inspiration.themeName}")
             updateThemeStats(inspiration.themeName)
             
             Result.success(Unit)
         } catch (e: Exception) {
+            println("❌ 灵感保存失败: ${e.message}")
             Result.failure(e)
         }
     }
