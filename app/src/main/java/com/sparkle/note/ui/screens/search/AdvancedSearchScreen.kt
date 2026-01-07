@@ -15,12 +15,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.compose.ui.text.input.KeyboardType
-import com.sparkle.note.ui.screens.main.TimeFilter
 
 /**
  * Advanced search screen with multiple search criteria.
- * Supports content search, theme filtering, and time range filtering.
+ * Supports content search and theme filtering.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -65,10 +63,6 @@ fun AdvancedSearchScreen(
                     showSuggestions = it.isNotBlank()
                     viewModel.updateSearchQuery(it)
                 },
-                onSearch = {
-                    viewModel.performSearch()
-                    showSuggestions = false
-                },
                 suggestions = if (showSuggestions) uiState.searchSuggestions else emptyList(),
                 onSuggestionClick = { suggestion ->
                     searchQuery = suggestion
@@ -85,10 +79,8 @@ fun AdvancedSearchScreen(
                 onClearHistory = viewModel::clearSearchHistory
             )
             
-            // Filter chips
+            // Filter chips - 仅保留主题筛选
             FilterChipsSection(
-                timeFilter = uiState.timeFilter,
-                onTimeFilterChange = viewModel::updateTimeFilter,
                 availableThemes = uiState.availableThemes,
                 selectedThemes = uiState.selectedThemes,
                 onToggleThemeSelection = viewModel::toggleThemeSelection,
@@ -140,7 +132,6 @@ fun AdvancedSearchScreen(
 fun SearchInputSection(
     query: String,
     onQueryChange: (String) -> Unit,
-    onSearch: () -> Unit,
     suggestions: List<String>,
     onSuggestionClick: (String) -> Unit,
     searchHistory: List<String>,
@@ -153,34 +144,29 @@ fun SearchInputSection(
             .padding(16.dp)
     ) {
         // Search input field
-        Row(
+        OutlinedTextField(
+            value = query,
+            onValueChange = onQueryChange,
             modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            OutlinedTextField(
-                value = query,
-                onValueChange = onQueryChange,
-                modifier = Modifier.weight(1f),
-                placeholder = { Text("搜索灵感内容、主题...") },
-                singleLine = true,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                )
-            )
-            
-            Spacer(modifier = Modifier.width(8.dp))
-            
-            FilledTonalButton(
-                onClick = onSearch,
-                modifier = Modifier.height(56.dp)
-            ) {
+            placeholder = { Text("搜索灵感内容或主题...") },
+            leadingIcon = {
                 Icon(
                     imageVector = Icons.Default.Search,
                     contentDescription = "搜索"
                 )
-            }
-        }
+            },
+            trailingIcon = {
+                if (query.isNotEmpty()) {
+                    IconButton(onClick = { onQueryChange("") }) {
+                        Icon(
+                            imageVector = Icons.Default.Clear,
+                            contentDescription = "清除"
+                        )
+                    }
+                }
+            },
+            singleLine = true
+        )
         
         Spacer(modifier = Modifier.height(16.dp))
         
@@ -287,8 +273,6 @@ fun SearchHistorySection(
 
 @Composable
 fun FilterChipsSection(
-    timeFilter: TimeFilter,
-    onTimeFilterChange: (TimeFilter) -> Unit,
     availableThemes: List<String>,
     selectedThemes: List<String>,
     onToggleThemeSelection: (String) -> Unit,
@@ -300,23 +284,12 @@ fun FilterChipsSection(
             .padding(horizontal = 16.dp)
     ) {
         Text(
-            text = "筛选条件",
+            text = "主题筛选",
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(bottom = 8.dp)
         )
         
         // Theme filter mode toggle
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-            text = "主题筛选：",
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -334,80 +307,50 @@ fun FilterChipsSection(
                 }
             }
         }
-    }
-    
-    Spacer(modifier = Modifier.height(4.dp))
-    
-    // Unified multi-theme selection with flexible layout
-    Column(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        // "All themes" chip - selected when no specific themes are selected
-        FilterChip(
-            selected = selectedThemes.isEmpty(),
-            onClick = { 
-                if (selectedThemes.isNotEmpty()) {
-                    onClearAllThemes()
-                }
-            },
-            label = { Text("全部主题") },
-            modifier = Modifier.padding(end = 8.dp, bottom = 8.dp)
-        )
-        
-        // Dynamic theme chips for multi-selection - using Column with wrap
-        Column(
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            availableThemes.chunked(4).forEach { rowThemes ->
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    rowThemes.forEach { theme ->
-                        FilterChip(
-                            selected = selectedThemes.contains(theme),
-                            onClick = { onToggleThemeSelection(theme) },
-                            label = { Text(theme) },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                    // Fill remaining space if row has less than 4 items
-                    repeat(4 - rowThemes.size) {
-                        Spacer(modifier = Modifier.weight(1f))
-                    }
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-            }
-        }
-    }
         
         Spacer(modifier = Modifier.height(8.dp))
         
-        // Time filter
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        // Unified multi-theme selection with flexible layout
+        Column(
+            modifier = Modifier.fillMaxWidth()
         ) {
+            // "All themes" chip - selected when no specific themes are selected
             FilterChip(
-                selected = timeFilter == TimeFilter.ALL,
-                onClick = { onTimeFilterChange(TimeFilter.ALL) },
-                label = { Text("全部时间") }
+                selected = selectedThemes.isEmpty(),
+                onClick = { 
+                    if (selectedThemes.isNotEmpty()) {
+                        onClearAllThemes()
+                    }
+                },
+                label = { Text("全部主题") },
+                modifier = Modifier.padding(end = 8.dp, bottom = 8.dp)
             )
-            FilterChip(
-                selected = timeFilter == TimeFilter.TODAY,
-                onClick = { onTimeFilterChange(TimeFilter.TODAY) },
-                label = { Text("今天") }
-            )
-            FilterChip(
-                selected = timeFilter == TimeFilter.THIS_WEEK,
-                onClick = { onTimeFilterChange(TimeFilter.THIS_WEEK) },
-                label = { Text("本周") }
-            )
-            FilterChip(
-                selected = timeFilter == TimeFilter.THIS_MONTH,
-                onClick = { onTimeFilterChange(TimeFilter.THIS_MONTH) },
-                label = { Text("本月") }
-            )
+            
+            // Dynamic theme chips for multi-selection - using Column with wrap
+            Column(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                availableThemes.chunked(4).forEach { rowThemes ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        rowThemes.forEach { theme ->
+                            FilterChip(
+                                selected = selectedThemes.contains(theme),
+                                onClick = { onToggleThemeSelection(theme) },
+                                label = { Text(theme) },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                        // Fill remaining space if row has less than 4 items
+                        repeat(4 - rowThemes.size) {
+                            Spacer(modifier = Modifier.weight(1f))
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+            }
         }
     }
 }
@@ -439,7 +382,7 @@ fun InspirationSearchResultItem(
                     color = MaterialTheme.colorScheme.primary
                 )
                 Text(
-                    text = android.text.format.DateFormat.format("MM月dd日", inspiration.createdAt).toString(),
+                    text = formatTimeAgo(inspiration.createdAt),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -454,7 +397,30 @@ fun InspirationSearchResultItem(
                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
             )
             
-            // Tags removed - Inspiration model doesn't have tags field
+            Spacer(modifier = Modifier.height(4.dp))
+            
+            Text(
+                text = "${inspiration.wordCount} 字",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.End,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
+    }
+}
+
+/**
+ * Formats timestamp to relative time string.
+ */
+private fun formatTimeAgo(timestamp: Long): String {
+    val now = System.currentTimeMillis()
+    val diff = now - timestamp
+    
+    return when {
+        diff < 60_000 -> "刚刚"
+        diff < 3_600_000 -> "${diff / 60_000}分钟前"
+        diff < 86_400_000 -> "${diff / 3_600_000}小时前"
+        else -> "${diff / 86_400_000}天前"
     }
 }

@@ -7,7 +7,6 @@ import com.sparkle.note.domain.repository.InspirationRepository
 import com.sparkle.note.domain.repository.ThemeRepository
 import com.sparkle.note.utils.SearchHistoryManager
 import com.sparkle.note.utils.SearchSuggestionManager
-import com.sparkle.note.ui.screens.main.TimeFilter
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -19,7 +18,6 @@ import javax.inject.Inject
 data class AdvancedSearchUiState(
     val searchQuery: String = "",
     val selectedThemes: List<String> = emptyList(), // Multi-theme support only
-    val timeFilter: TimeFilter = TimeFilter.ALL,
     val searchResults: List<Inspiration> = emptyList(),
     val searchHistory: List<String> = emptyList(),
     val searchSuggestions: List<String> = emptyList(),
@@ -30,7 +28,7 @@ data class AdvancedSearchUiState(
 
 /**
  * ViewModel for advanced search functionality.
- * Manages complex search with multiple criteria and suggestions.
+ * Manages complex search with content and theme filtering.
  */
 @HiltViewModel
 class AdvancedSearchViewModel @Inject constructor(
@@ -92,13 +90,6 @@ class AdvancedSearchViewModel @Inject constructor(
     }
     
     /**
-     * Updates the time filter.
-     */
-    fun updateTimeFilter(timeFilter: TimeFilter) {
-        _uiState.update { it.copy(timeFilter = timeFilter) }
-    }
-    
-    /**
      * Performs the search with current criteria.
      * Unified multi-theme mode: if no theme is selected, search across all themes.
      */
@@ -136,15 +127,6 @@ class AdvancedSearchViewModel @Inject constructor(
                     }
                 }
                 // If selectedThemes is empty, search across all themes (no filtering)
-                
-                // Apply time filter
-                val now = System.currentTimeMillis()
-                resultInspirations = when (currentState.timeFilter) {
-                    TimeFilter.TODAY -> resultInspirations.filter { isToday(it.createdAt, now) }
-                    TimeFilter.THIS_WEEK -> resultInspirations.filter { isThisWeek(it.createdAt, now) }
-                    TimeFilter.THIS_MONTH -> resultInspirations.filter { isThisMonth(it.createdAt, now) }
-                    TimeFilter.ALL -> resultInspirations
-                }
                 
                 _uiState.update { 
                     it.copy(
@@ -210,29 +192,5 @@ class AdvancedSearchViewModel @Inject constructor(
                     _uiState.update { it.copy(searchHistory = history) }
                 }
         }
-    }
-    
-    /**
-     * Helper function to check if timestamp is today.
-     */
-    private fun isToday(timestamp: Long, now: Long): Boolean {
-        val dayInMillis = 24 * 60 * 60 * 1000L
-        return now - timestamp < dayInMillis
-    }
-    
-    /**
-     * Helper function to check if timestamp is this week.
-     */
-    private fun isThisWeek(timestamp: Long, now: Long): Boolean {
-        val weekInMillis = 7 * 24 * 60 * 60 * 1000L
-        return now - timestamp < weekInMillis
-    }
-    
-    /**
-     * Helper function to check if timestamp is this month.
-     */
-    private fun isThisMonth(timestamp: Long, now: Long): Boolean {
-        val monthInMillis = 30L * 24 * 60 * 60 * 1000L
-        return now - timestamp < monthInMillis
     }
 }
