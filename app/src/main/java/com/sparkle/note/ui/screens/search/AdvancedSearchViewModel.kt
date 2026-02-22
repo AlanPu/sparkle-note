@@ -80,6 +80,7 @@ class AdvancedSearchViewModel @Inject constructor(
             }
             currentState.copy(selectedThemes = currentThemes)
         }
+        performSearch()
     }
     
     /**
@@ -87,6 +88,7 @@ class AdvancedSearchViewModel @Inject constructor(
      */
     fun clearAllSelectedThemes() {
         _uiState.update { it.copy(selectedThemes = emptyList()) }
+        performSearch()
     }
     
     /**

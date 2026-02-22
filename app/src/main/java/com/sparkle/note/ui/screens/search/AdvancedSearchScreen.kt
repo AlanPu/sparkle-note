@@ -62,6 +62,7 @@ fun AdvancedSearchScreen(
                     searchQuery = it
                     showSuggestions = it.isNotBlank()
                     viewModel.updateSearchQuery(it)
+                    viewModel.performSearch()
                 },
                 suggestions = if (showSuggestions) uiState.searchSuggestions else emptyList(),
                 onSuggestionClick = { suggestion ->
@@ -97,7 +98,7 @@ fun AdvancedSearchScreen(
                         CircularProgressIndicator()
                     }
                 }
-                uiState.searchResults.isEmpty() && searchQuery.isNotBlank() -> {
+                uiState.searchResults.isEmpty() && (searchQuery.isNotBlank() || uiState.selectedThemes.isNotEmpty()) -> {
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
