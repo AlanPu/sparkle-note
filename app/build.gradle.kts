@@ -7,15 +7,15 @@ plugins {
 }
 
 android {
-    namespace = "com.sparkle.note"
+    namespace = "top.alanpu.sparklenote.app"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.sparkle.note"
+        applicationId = "top.alanpu.sparklenote.app"
         minSdk = 24
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 3
+        versionName = "1.0.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -42,10 +42,11 @@ android {
         outputs.configureEach {
             if (this is com.android.build.gradle.internal.api.ApkVariantOutputImpl) {
                 val buildType = buildType.name
+                val versionName = defaultConfig.versionName
                 outputFileName = when (buildType) {
-                    "release" -> "sparkle-note.apk"
-                    "debug" -> "sparkle-note-debug.apk"
-                    else -> "sparkle-note-${buildType}.apk"
+                    "release" -> "sparkle-note-${versionName}.apk"
+                    "debug" -> "sparkle-note-${versionName}-debug.apk"
+                    else -> "sparkle-note-${versionName}-${buildType}.apk"
                 }
             }
         }

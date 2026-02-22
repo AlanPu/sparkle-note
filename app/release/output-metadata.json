@@ -4,16 +4,16 @@
     "type": "APK",
     "kind": "Directory"
   },
-  "applicationId": "com.sparkle.note",
+  "applicationId": "top.alanpu.sparklenote.app",
   "variantName": "release",
   "elements": [
     {
       "type": "SINGLE",
       "filters": [],
       "attributes": [],
-      "versionCode": 1,
-      "versionName": "1.0.0",
-      "outputFile": "sparkle-note.apk"
+      "versionCode": 3,
+      "versionName": "1.0.3",
+      "outputFile": "sparkle-note-1.0.3.apk"
     }
   ],
   "elementType": "File"
